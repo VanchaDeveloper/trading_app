@@ -18,7 +18,7 @@ void main() {
             symbol: 'RELI',
             side: OrderSide.buy,
             quantity: 2,
-            pricePerShare: Money.fromPaise(1000),
+            pricePerShare: const Money.fromPaise(1000),
             executedAt: DateTime(2026, 1, 1),
           ),
           Order(
@@ -26,13 +26,13 @@ void main() {
             symbol: 'RELI',
             side: OrderSide.buy,
             quantity: 1,
-            pricePerShare: Money.fromPaise(3000),
+            pricePerShare: const Money.fromPaise(3000),
             executedAt: DateTime(2026, 1, 2),
           ),
         ];
 
         final List<Holding> result = calculator.derive(orders, <String, Money>{
-          'RELI': Money.fromPaise(2500),
+          'RELI': const Money.fromPaise(2500),
         });
 
         expect(result, hasLength(1));
@@ -48,7 +48,7 @@ void main() {
           symbol: 'RELI',
           side: OrderSide.buy,
           quantity: 2,
-          pricePerShare: Money.fromPaise(1000),
+          pricePerShare: const Money.fromPaise(1000),
           executedAt: DateTime(2026, 1, 1),
         ),
         Order(
@@ -56,13 +56,13 @@ void main() {
           symbol: 'RELI',
           side: OrderSide.sell,
           quantity: 2,
-          pricePerShare: Money.fromPaise(1100),
+          pricePerShare: const Money.fromPaise(1100),
           executedAt: DateTime(2026, 1, 3),
         ),
       ];
 
       final List<Holding> result = calculator.derive(orders, <String, Money>{
-        'RELI': Money.fromPaise(1100),
+        'RELI': const Money.fromPaise(1100),
       });
 
       expect(result, isEmpty);

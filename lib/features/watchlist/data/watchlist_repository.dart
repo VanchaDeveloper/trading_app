@@ -13,18 +13,27 @@ class WatchlistRepository {
 
   static const String _selectedIdKey = 'selected_watchlist_id';
   static const String _defaultWatchlistName = 'Default';
-  static const List<String> _defaultSymbols = <String>['RELI', 'TCS', 'HDFC', 'INFY', 'ICICI'];
+  static const List<String> _defaultSymbols = <String>[
+    'RELI',
+    'TCS',
+    'HDFC',
+    'INFY',
+    'ICICI',
+  ];
 
   final Box<dynamic> _box;
 
   Future<void> ensureSeeded() async {
-    final String id = 'default';
+    const String id = 'default';
     if (!_box.containsKey(id)) {
-      await _box.put(id, Watchlist(
-        id: id,
-        name: _defaultWatchlistName,
-        symbols: List<String>.of(_defaultSymbols),
-      ).toMap());
+      await _box.put(
+        id,
+        Watchlist(
+          id: id,
+          name: _defaultWatchlistName,
+          symbols: List<String>.of(_defaultSymbols),
+        ).toMap(),
+      );
     }
     if (!_box.containsKey(_selectedIdKey)) {
       await _box.put(_selectedIdKey, id);
@@ -56,7 +65,11 @@ class WatchlistRepository {
 
   Future<Result<bool>> create(String name) async {
     final String id = DateTime.now().microsecondsSinceEpoch.toString();
-    final Watchlist watchlist = Watchlist(id: id, name: name.trim(), symbols: <String>[]);
+    final Watchlist watchlist = Watchlist(
+      id: id,
+      name: name.trim(),
+      symbols: <String>[],
+    );
     try {
       await _box.put(id, watchlist.toMap());
       await _box.put(_selectedIdKey, id);
@@ -108,7 +121,9 @@ class WatchlistRepository {
     final Watchlist? selected = getSelected();
     if (selected == null) return const Ok<bool>(true);
     if (selected.symbols.contains(stock.symbol)) return const Ok<bool>(true);
-    final Watchlist updated = selected.copyWith(symbols: <String>[...selected.symbols, stock.symbol]);
+    final Watchlist updated = selected.copyWith(
+      symbols: <String>[...selected.symbols, stock.symbol],
+    );
     try {
       await _box.put(selected.id, updated.toMap());
       return const Ok<bool>(true);
@@ -120,7 +135,10 @@ class WatchlistRepository {
   Future<Result<bool>> remove(Stock stock) async {
     final Watchlist? selected = getSelected();
     if (selected == null) return const Ok<bool>(true);
-    final Watchlist updated = selected.copyWith(symbols: <String>[...selected.symbols]..removeWhere((String symbol) => symbol == stock.symbol));
+    final Watchlist updated = selected.copyWith(
+      symbols: <String>[...selected.symbols]
+        ..removeWhere((String symbol) => symbol == stock.symbol),
+    );
     try {
       await _box.put(selected.id, updated.toMap());
       return const Ok<bool>(true);

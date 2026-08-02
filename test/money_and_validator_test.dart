@@ -14,8 +14,8 @@ void main() {
     });
 
     test('formats using grouped rupees and two decimal places', () {
-      expect(Money.fromPaise(123456).format(), equals('₹1,234.56'));
-      expect(Money.fromPaise(-123456).format(), equals('-₹1,234.56'));
+      expect(const Money.fromPaise(123456).format(), equals('₹1,234.56'));
+      expect(const Money.fromPaise(-123456).format(), equals('-₹1,234.56'));
     });
   });
 
@@ -27,8 +27,8 @@ void main() {
         symbol: 'RELI',
         side: OrderSide.buy,
         quantity: 0,
-        pricePerShare: Money.fromPaise(1000),
-        currentWalletBalance: Money.fromPaise(5000),
+        pricePerShare: const Money.fromPaise(1000),
+        currentWalletBalance: const Money.fromPaise(5000),
         currentHeldQuantity: 0,
         generateOrderId: () => 'id-1',
         now: () => DateTime(2026, 1, 1),
@@ -43,8 +43,8 @@ void main() {
         symbol: 'RELI',
         side: OrderSide.buy,
         quantity: 8,
-        pricePerShare: Money.fromPaise(1000),
-        currentWalletBalance: Money.fromPaise(7000),
+        pricePerShare: const Money.fromPaise(1000),
+        currentWalletBalance: const Money.fromPaise(7000),
         currentHeldQuantity: 0,
         generateOrderId: () => 'id-2',
         now: () => DateTime(2026, 1, 1),
@@ -59,8 +59,8 @@ void main() {
         symbol: 'RELI',
         side: OrderSide.buy,
         quantity: 3,
-        pricePerShare: Money.fromPaise(1000),
-        currentWalletBalance: Money.fromPaise(5000),
+        pricePerShare: const Money.fromPaise(1000),
+        currentWalletBalance: const Money.fromPaise(5000),
         currentHeldQuantity: 0,
         generateOrderId: () => 'id-3',
         now: () => DateTime(2026, 1, 1),

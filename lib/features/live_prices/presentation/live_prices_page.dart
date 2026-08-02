@@ -30,7 +30,7 @@ class LivePricesPage extends StatelessWidget {
       ),
       body: ListView.separated(
         itemCount: StockUniverse.all.length,
-        separatorBuilder: (_, __) => const Divider(height: 1),
+        separatorBuilder: (_, _) => const Divider(height: 1),
         itemBuilder: (BuildContext context, int index) {
           final stock = StockUniverse.all[index];
           return StockRow(
@@ -51,7 +51,7 @@ class LivePricesPage extends StatelessWidget {
     BuildContext context,
     MarketDataService market,
   ) async {
-    final double currentMs = 200;
+    const double currentMs = 200;
     double selectedMs = currentMs;
 
     await showDialog<void>(

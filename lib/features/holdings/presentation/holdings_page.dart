@@ -123,7 +123,7 @@ class _HoldingsView extends StatelessWidget {
               Expanded(
                 child: ListView.separated(
                   itemCount: state.holdings.length,
-                  separatorBuilder: (_, __) => const Divider(height: 1),
+                  separatorBuilder: (_, _) => const Divider(height: 1),
                   itemBuilder: (BuildContext context, int index) {
                     final holding = state.holdings[index];
                     return HoldingRow(

@@ -53,7 +53,7 @@ class StockRow extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: tick.changeSign == 0
                           ? Colors.transparent
-                          : changeColor.withOpacity(flashOpacity * 0.18),
+                          : changeColor.withValues(alpha: flashOpacity * 0.18),
                     ),
                     child: child,
                   );
@@ -100,7 +100,7 @@ class StockRow extends StatelessWidget {
                           ),
                           const SizedBox(height: 2),
                           Text(
-                            '$sign${tick.changeAmount.format()} (${sign}${tick.changePercent.toStringAsFixed(2)}%)',
+                            '$sign${tick.changeAmount.format()} ($sign${tick.changePercent.toStringAsFixed(2)}%)',
                             style: AppTheme.tabularFigures.copyWith(
                               fontSize: 12,
                               fontWeight: FontWeight.w500,

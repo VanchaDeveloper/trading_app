@@ -58,7 +58,7 @@ class WatchlistDetailPage extends StatelessWidget {
           return ReorderableListView.builder(
             buildDefaultDragHandles: false,
             itemCount: state.stocks.length,
-            onReorder: (int oldIndex, int newIndex) {
+            onReorderItem: (int oldIndex, int newIndex) {
               // ReorderableListView passes newIndex as if the item hadn't
               // been removed yet; the repository expects the same
               // convention and normalizes internally.
@@ -76,9 +76,14 @@ class WatchlistDetailPage extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: <Widget>[
                       IconButton(
-                        icon: const Icon(Icons.close, color: MarketColors.loss, size: 20),
+                        icon: const Icon(
+                          Icons.close,
+                          color: MarketColors.loss,
+                          size: 20,
+                        ),
                         tooltip: 'Remove',
-                        onPressed: () => context.read<WatchlistCubit>().remove(stock),
+                        onPressed: () =>
+                            context.read<WatchlistCubit>().remove(stock),
                       ),
                       ReorderableDragStartListener(
                         index: index,
@@ -116,13 +121,15 @@ class WatchlistDetailPage extends StatelessWidget {
                 builder: (BuildContext context, WatchlistState state) {
                   final List<Stock> addable = state.addableStocks;
                   if (addable.isEmpty) {
-                    return const Center(child: Text('All stocks are already on your watchlist.'));
+                    return const Center(
+                      child: Text('All stocks are already on your watchlist.'),
+                    );
                   }
                   return ListView.separated(
                     controller: scrollController,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     itemCount: addable.length,
-                    separatorBuilder: (_, __) => const Divider(height: 1),
+                    separatorBuilder: (_, _) => const Divider(height: 1),
                     itemBuilder: (BuildContext context, int index) {
                       final Stock stock = addable[index];
                       return ListTile(

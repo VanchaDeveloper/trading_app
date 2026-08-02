@@ -88,7 +88,7 @@ class _WatchlistView extends StatelessWidget {
 
           return ListView.separated(
             itemCount: state.stocks.length,
-            separatorBuilder: (_, __) => const Divider(height: 1),
+            separatorBuilder: (_, _) => const Divider(height: 1),
             itemBuilder: (BuildContext context, int index) {
               final Stock stock = state.stocks[index];
               return StockRow(

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -27,7 +28,9 @@ class BuySellTicketPage extends StatefulWidget {
 
 class _BuySellTicketPageState extends State<BuySellTicketPage> {
   OrderSide _side = OrderSide.buy;
-  final TextEditingController _quantityController = TextEditingController(text: '1');
+  final TextEditingController _quantityController = TextEditingController(
+    text: '1',
+  );
   String? _errorText;
   bool _submitting = false;
 
@@ -54,35 +57,45 @@ class _BuySellTicketPageState extends State<BuySellTicketPage> {
     // The entire read-validate-write sequence runs inside the mutex so no
     // other order for this or any other symbol can interleave and observe
     // a stale wallet balance or holdings quantity.
-    final Result<Order> result = await sl.walletOrderMutex.run<Result<Order>>(() async {
-      final Money walletBalance = sl.walletRepository.currentBalance();
-      final int heldQuantity = sl.orderRepository.getForSymbol(symbol).fold<int>(
-            0,
-            (int qty, Order o) => o.side == OrderSide.buy ? qty + o.quantity : qty - o.quantity,
-          );
+    final Result<Order> result = await sl.walletOrderMutex.run<Result<Order>>(
+      () async {
+        final Money walletBalance = sl.walletRepository.currentBalance();
+        final int heldQuantity = sl.orderRepository
+            .getForSymbol(symbol)
+            .fold<int>(
+              0,
+              (int qty, Order o) =>
+                  o.side == OrderSide.buy ? qty + o.quantity : qty - o.quantity,
+            );
 
-      final Result<Order> validation = const TradeValidator().validate(
-        symbol: symbol,
-        side: side,
-        quantity: quantity,
-        pricePerShare: pricePerShare,
-        currentWalletBalance: walletBalance,
-        currentHeldQuantity: heldQuantity,
-        generateOrderId: () => DateTime.now().microsecondsSinceEpoch.toString(),
-        now: () => DateTime.now(),
-      );
+        final Result<Order> validation = const TradeValidator().validate(
+          symbol: symbol,
+          side: side,
+          quantity: quantity,
+          pricePerShare: pricePerShare,
+          currentWalletBalance: walletBalance,
+          currentHeldQuantity: heldQuantity,
+          generateOrderId: () =>
+              DateTime.now().microsecondsSinceEpoch.toString(),
+          now: () => DateTime.now(),
+        );
 
-      if (validation is Err<Order>) {
-        return validation;
-      }
-      final Order order = (validation as Ok<Order>).value;
-      final Money delta = order.side == OrderSide.buy ? -order.totalAmount : order.totalAmount;
-      final Result<Money> walletResult = await sl.walletRepository.applyDelta(delta);
-      if (walletResult.isErr) {
-        return Err<Order>(walletResult.failureOrNull!);
-      }
-      return sl.orderRepository.append(order);
-    });
+        if (validation is Err<Order>) {
+          return validation;
+        }
+        final Order order = (validation as Ok<Order>).value;
+        final Money delta = order.side == OrderSide.buy
+            ? -order.totalAmount
+            : order.totalAmount;
+        final Result<Money> walletResult = await sl.walletRepository.applyDelta(
+          delta,
+        );
+        if (walletResult.isErr) {
+          return Err<Order>(walletResult.failureOrNull!);
+        }
+        return sl.orderRepository.append(order);
+      },
+    );
 
     if (!mounted) return;
     setState(() => _submitting = false);
@@ -90,14 +103,19 @@ class _BuySellTicketPageState extends State<BuySellTicketPage> {
     result.fold(
       (Failure failure) => setState(() => _errorText = failure.message),
       (Order order) => Navigator.of(context).pushReplacement(
-        MaterialPageRoute<void>(builder: (_) => OrderConfirmationPage(order: order)),
+        MaterialPageRoute<void>(
+          builder: (_) => OrderConfirmationPage(order: order),
+        ),
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final ValueListenable<PriceTick> tickerListenable = ServiceLocator.instance.marketDataService.tickerFor(widget.stock.symbol);
+    final ValueListenable<PriceTick> tickerListenable = ServiceLocator
+        .instance
+        .marketDataService
+        .tickerFor(widget.stock.symbol);
 
     return ValueListenableBuilder<PriceTick>(
       valueListenable: tickerListenable,
@@ -106,50 +124,84 @@ class _BuySellTicketPageState extends State<BuySellTicketPage> {
         final Money total = pricePerShare * (_quantity < 0 ? 0 : _quantity);
 
         return Scaffold(
-          appBar: AppBar(title: Text('${widget.stock.symbol} \u00b7 ${widget.stock.name}')),
+          appBar: AppBar(
+            title: Text('${widget.stock.symbol} \u00b7 ${widget.stock.name}'),
+          ),
           body: Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: <Widget>[
-                Text('Live price', style: Theme.of(context).textTheme.bodySmall),
+                Text(
+                  'Live price',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
                 const SizedBox(height: 4),
-                Text(pricePerShare.format(), style: AppTheme.tabularFiguresLarge),
+                Text(
+                  pricePerShare.format(),
+                  style: AppTheme.tabularFiguresLarge,
+                ),
                 const SizedBox(height: 24),
                 SegmentedButton<OrderSide>(
                   segments: const <ButtonSegment<OrderSide>>[
-                    ButtonSegment<OrderSide>(value: OrderSide.buy, label: Text('Buy')),
-                    ButtonSegment<OrderSide>(value: OrderSide.sell, label: Text('Sell')),
+                    ButtonSegment<OrderSide>(
+                      value: OrderSide.buy,
+                      label: Text('Buy'),
+                    ),
+                    ButtonSegment<OrderSide>(
+                      value: OrderSide.sell,
+                      label: Text('Sell'),
+                    ),
                   ],
                   selected: <OrderSide>{_side},
-                  onSelectionChanged: (Set<OrderSide> selection) => setState(() => _side = selection.first),
+                  onSelectionChanged: (Set<OrderSide> selection) =>
+                      setState(() => _side = selection.first),
                 ),
                 const SizedBox(height: 16),
                 TextField(
                   controller: _quantityController,
                   keyboardType: TextInputType.number,
-                  inputFormatters: <TextInputFormatter>[FilteringTextInputFormatter.digitsOnly],
-                  decoration: const InputDecoration(labelText: 'Quantity', border: OutlineInputBorder()),
+                  inputFormatters: <TextInputFormatter>[
+                    FilteringTextInputFormatter.digitsOnly,
+                  ],
+                  decoration: const InputDecoration(
+                    labelText: 'Quantity',
+                    border: OutlineInputBorder(),
+                  ),
                   onChanged: (_) => setState(() {}),
                 ),
                 const SizedBox(height: 16),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: <Widget>[
-                    Text('Order total', style: Theme.of(context).textTheme.bodySmall),
+                    Text(
+                      'Order total',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
                     Text(total.format(), style: AppTheme.tabularFigures),
                   ],
                 ),
                 if (_errorText != null) ...<Widget>[
                   const SizedBox(height: 12),
-                  Text(_errorText!, style: const TextStyle(color: MarketColors.loss)),
+                  Text(
+                    _errorText!,
+                    style: const TextStyle(color: MarketColors.loss),
+                  ),
                 ],
                 const Spacer(),
                 ElevatedButton(
                   onPressed: _submitting || _quantity <= 0 ? null : _onConfirm,
                   child: _submitting
-                      ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2))
-                      : Text(_side == OrderSide.buy ? 'Confirm Buy' : 'Confirm Sell'),
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : Text(
+                          _side == OrderSide.buy
+                              ? 'Confirm Buy'
+                              : 'Confirm Sell',
+                        ),
                 ),
               ],
             ),

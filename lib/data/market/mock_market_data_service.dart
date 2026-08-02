@@ -27,9 +27,8 @@ import 'price_tick.dart';
 class MockMarketDataService implements MarketDataService {
   MockMarketDataService({
     Random? random,
-    Duration tickInterval = const Duration(milliseconds: 200),
-  }) : _random = random ?? Random(),
-       _tickInterval = tickInterval;
+    this._tickInterval = const Duration(milliseconds: 200),
+  }) : _random = random ?? Random();
 
   Duration _tickInterval;
 

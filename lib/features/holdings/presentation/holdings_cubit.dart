@@ -67,15 +67,12 @@ class HoldingsState {
 /// list right after a trade.
 class HoldingsCubit extends Cubit<HoldingsState> {
   HoldingsCubit({
-    required OrderRepository orderRepository,
-    required MarketDataService marketDataService,
+    required this._orderRepository,
+    required this._marketDataService,
     required OrderEventBus orderEventBus,
-    HoldingsCalculator calculator = const HoldingsCalculator(),
+    this._calculator = const HoldingsCalculator(),
     Duration priceRefreshThrottle = const Duration(milliseconds: 800),
-  }) : _orderRepository = orderRepository,
-       _marketDataService = marketDataService,
-       _calculator = calculator,
-       super(HoldingsState.empty()) {
+  }) : super(HoldingsState.empty()) {
     _deriveFromOrders(); // initial load
     // TRIGGER 1 — order-driven: fires immediately (no throttling) whenever
     // any order is executed anywhere in the app.

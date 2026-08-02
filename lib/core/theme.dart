@@ -56,10 +56,13 @@ class AppTheme {
         margin: EdgeInsets.zero,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
-      dividerTheme: const DividerThemeData(color: Color(0xFF262C36), thickness: 1),
+      dividerTheme: const DividerThemeData(
+        color: Color(0xFF262C36),
+        thickness: 1,
+      ),
       navigationBarTheme: NavigationBarThemeData(
         backgroundColor: _surface,
-        indicatorColor: _primary.withOpacity(0.18),
+        indicatorColor: _primary.withValues(alpha: 0.18),
         labelTextStyle: WidgetStateProperty.all(
           const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
         ),
@@ -69,7 +72,9 @@ class AppTheme {
           backgroundColor: _primary,
           foregroundColor: Colors.white,
           padding: const EdgeInsets.symmetric(vertical: 14),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
         ),
       ),
       textTheme: const TextTheme(
