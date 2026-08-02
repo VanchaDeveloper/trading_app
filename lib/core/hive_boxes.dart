@@ -12,9 +12,4 @@ class HiveBoxes {
   /// Single-entry box holding the ordered list of watchlist symbols
   /// (key: 'symbols').
   static const String watchlist = 'box_watchlist';
-
-  /// Box containing the full watched-list catalog in named watchlist form.
-  /// Each key is a watchlist id and each value is a map containing its
-  /// name and ordered symbols.
-  static const String watchlists = 'box_watchlists';
 }

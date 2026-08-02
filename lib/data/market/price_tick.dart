@@ -12,6 +12,7 @@ class PriceTick {
     required this.previousClose,
     required this.changeAmount,
     required this.changeSign,
+    required this.timestamp,
   });
 
   factory PriceTick.initial(String symbol, Money seedPrice) {
@@ -21,12 +22,14 @@ class PriceTick {
       previousClose: seedPrice,
       changeAmount: Money.zero,
       changeSign: 0,
+      timestamp: DateTime.now(),
     );
   }
 
   final String symbol;
   final Money price;
   final Money previousClose;
+  final DateTime timestamp;
 
   /// Always `price - previousClose`; positive means up, negative means down.
   final Money changeAmount;

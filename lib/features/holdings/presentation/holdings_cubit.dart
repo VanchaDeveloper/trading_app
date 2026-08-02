@@ -21,11 +21,11 @@ class HoldingsState {
   });
 
   factory HoldingsState.empty() => const HoldingsState(
-        holdings: <Holding>[],
-        totalCurrentValue: Money.zero,
-        totalInvested: Money.zero,
-        sortBy: HoldingsSort.pnl,
-      );
+    holdings: <Holding>[],
+    totalCurrentValue: Money.zero,
+    totalInvested: Money.zero,
+    sortBy: HoldingsSort.pnl,
+  );
 
   final List<Holding> holdings;
   final Money totalCurrentValue;
@@ -33,6 +33,11 @@ class HoldingsState {
   final HoldingsSort sortBy;
 
   Money get totalPnl => totalCurrentValue - totalInvested;
+
+  double get totalPnlPercent {
+    if (totalInvested.paise == 0) return 0.0;
+    return (totalPnl.paise / totalInvested.paise) * 100;
+  }
 }
 
 /// Holdings must react to two fundamentally different kinds of events, and
@@ -67,17 +72,22 @@ class HoldingsCubit extends Cubit<HoldingsState> {
     required OrderEventBus orderEventBus,
     HoldingsCalculator calculator = const HoldingsCalculator(),
     Duration priceRefreshThrottle = const Duration(milliseconds: 800),
-  })  : _orderRepository = orderRepository,
-        _marketDataService = marketDataService,
-        _calculator = calculator,
-        super(HoldingsState.empty()) {
+  }) : _orderRepository = orderRepository,
+       _marketDataService = marketDataService,
+       _calculator = calculator,
+       super(HoldingsState.empty()) {
     _deriveFromOrders(); // initial load
     // TRIGGER 1 — order-driven: fires immediately (no throttling) whenever
     // any order is executed anywhere in the app.
-    _orderSub = orderEventBus.onOrderExecuted.listen((Order _) => _deriveFromOrders());
+    _orderSub = orderEventBus.onOrderExecuted.listen(
+      (Order _) => _deriveFromOrders(),
+    );
     // TRIGGER 2 — price-driven: fires on a fixed cadence, independent of
     // trigger 1, and only touches price/P&L fields.
-    _priceRefreshTimer = Timer.periodic(priceRefreshThrottle, (_) => _refreshPricesOnly());
+    _priceRefreshTimer = Timer.periodic(
+      priceRefreshThrottle,
+      (_) => _refreshPricesOnly(),
+    );
   }
 
   final OrderRepository _orderRepository;
@@ -94,7 +104,8 @@ class HoldingsCubit extends Cubit<HoldingsState> {
   void _deriveFromOrders() {
     final orders = _orderRepository.getAll();
     final Map<String, Money> latestPrices = <String, Money>{
-      for (final order in orders) order.symbol: _marketDataService.latestTick(order.symbol).price,
+      for (final order in orders)
+        order.symbol: _marketDataService.latestTick(order.symbol).price,
     };
     final holdings = _calculator.derive(orders, latestPrices);
     emit(_toState(holdings, sortBy: state.sortBy));
@@ -118,8 +129,14 @@ class HoldingsCubit extends Cubit<HoldingsState> {
     emit(_toState(refreshed, sortBy: state.sortBy));
   }
 
-  HoldingsState _toState(List<Holding> holdings, {required HoldingsSort sortBy}) {
-    final List<Holding> sorted = _sortHoldings(List<Holding>.of(holdings), sortBy);
+  HoldingsState _toState(
+    List<Holding> holdings, {
+    required HoldingsSort sortBy,
+  }) {
+    final List<Holding> sorted = _sortHoldings(
+      List<Holding>.of(holdings),
+      sortBy,
+    );
     Money totalCurrent = Money.zero;
     Money totalInvested = Money.zero;
     for (final Holding h in sorted) {
@@ -137,10 +154,16 @@ class HoldingsCubit extends Cubit<HoldingsState> {
   List<Holding> _sortHoldings(List<Holding> holdings, HoldingsSort sortBy) {
     switch (sortBy) {
       case HoldingsSort.pnl:
-        holdings.sort((Holding a, Holding b) => b.unrealizedPnl.paise.compareTo(a.unrealizedPnl.paise));
+        holdings.sort(
+          (Holding a, Holding b) =>
+              b.unrealizedPnl.paise.compareTo(a.unrealizedPnl.paise),
+        );
         break;
       case HoldingsSort.value:
-        holdings.sort((Holding a, Holding b) => b.currentValue.paise.compareTo(a.currentValue.paise));
+        holdings.sort(
+          (Holding a, Holding b) =>
+              b.currentValue.paise.compareTo(a.currentValue.paise),
+        );
         break;
       case HoldingsSort.symbol:
         holdings.sort((Holding a, Holding b) => a.symbol.compareTo(b.symbol));

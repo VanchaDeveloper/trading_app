@@ -13,7 +13,9 @@ Future<void> main() async {
 }
 
 class TradingApp extends StatelessWidget {
-  const TradingApp({super.key});
+  const TradingApp({super.key, this.home});
+
+  final Widget? home;
 
   @override
   Widget build(BuildContext context) {
@@ -23,7 +25,7 @@ class TradingApp extends StatelessWidget {
       theme: AppTheme.dark,
       darkTheme: AppTheme.dark,
       themeMode: ThemeMode.dark,
-      home: const RootShell(),
+      home: home ?? const RootShell(),
     );
   }
 }
@@ -61,9 +63,21 @@ class _RootShellState extends State<RootShell> {
         selectedIndex: _index,
         onDestinationSelected: (int i) => setState(() => _index = i),
         destinations: const <NavigationDestination>[
-          NavigationDestination(icon: Icon(Icons.star_outline), selectedIcon: Icon(Icons.star), label: 'Watchlist'),
-          NavigationDestination(icon: Icon(Icons.show_chart_outlined), selectedIcon: Icon(Icons.show_chart), label: 'Live Prices'),
-          NavigationDestination(icon: Icon(Icons.pie_chart_outline), selectedIcon: Icon(Icons.pie_chart), label: 'Holdings'),
+          NavigationDestination(
+            icon: Icon(Icons.star_outline),
+            selectedIcon: Icon(Icons.star),
+            label: 'Watchlist',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.show_chart_outlined),
+            selectedIcon: Icon(Icons.show_chart),
+            label: 'Live Prices',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.pie_chart_outline),
+            selectedIcon: Icon(Icons.pie_chart),
+            label: 'Holdings',
+          ),
         ],
       ),
     );

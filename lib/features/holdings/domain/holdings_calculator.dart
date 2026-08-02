@@ -42,7 +42,7 @@ class HoldingsCalculator {
         final Money newCostBasis = existingCostBasis + incomingCostBasis;
         final Money newAvgCost = newQty == 0
             ? Money.zero
-            : Money.fromPaise((newCostBasis.paise / newQty).round());
+            : Money.fromPaise(newCostBasis.paise ~/ newQty);
 
         quantityBySymbol[order.symbol] = newQty;
         avgCostBySymbol[order.symbol] = newAvgCost;
@@ -56,12 +56,15 @@ class HoldingsCalculator {
     final List<Holding> holdings = <Holding>[];
     quantityBySymbol.forEach((String symbol, int quantity) {
       if (quantity <= 0) return; // fully exited positions are not "held"
-      holdings.add(Holding(
-        symbol: symbol,
-        quantity: quantity,
-        averageCost: avgCostBySymbol[symbol] ?? Money.zero,
-        currentPrice: latestPrices[symbol] ?? avgCostBySymbol[symbol] ?? Money.zero,
-      ));
+      holdings.add(
+        Holding(
+          symbol: symbol,
+          quantity: quantity,
+          averageCost: avgCostBySymbol[symbol] ?? Money.zero,
+          currentPrice:
+              latestPrices[symbol] ?? avgCostBySymbol[symbol] ?? Money.zero,
+        ),
+      );
     });
 
     holdings.sort((Holding a, Holding b) => a.symbol.compareTo(b.symbol));

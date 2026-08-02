@@ -18,7 +18,16 @@ class LivePricesPage extends StatelessWidget {
     final MarketDataService market = ServiceLocator.instance.marketDataService;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Live Prices')),
+      appBar: AppBar(
+        title: const Text('Live Prices'),
+        actions: <Widget>[
+          IconButton(
+            tooltip: 'Tick rate debug',
+            icon: const Icon(Icons.speed_outlined),
+            onPressed: () => _showTickRateDialog(context, market),
+          ),
+        ],
+      ),
       body: ListView.separated(
         itemCount: StockUniverse.all.length,
         separatorBuilder: (_, __) => const Divider(height: 1),
@@ -35,6 +44,61 @@ class LivePricesPage extends StatelessWidget {
           );
         },
       ),
+    );
+  }
+
+  Future<void> _showTickRateDialog(
+    BuildContext context,
+    MarketDataService market,
+  ) async {
+    final double currentMs = 200;
+    double selectedMs = currentMs;
+
+    await showDialog<void>(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return StatefulBuilder(
+          builder:
+              (BuildContext context, void Function(void Function()) setState) {
+                return AlertDialog(
+                  title: const Text('Tick rate debug'),
+                  content: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: <Widget>[
+                      const Text('Adjust the mock feed cadence live.'),
+                      const SizedBox(height: 12),
+                      Slider(
+                        value: selectedMs,
+                        min: 50,
+                        max: 1000,
+                        divisions: 19,
+                        label: '${selectedMs.round()} ms',
+                        onChanged: (double value) {
+                          setState(() => selectedMs = value);
+                        },
+                      ),
+                      Text('Current tick interval: ${selectedMs.round()} ms'),
+                    ],
+                  ),
+                  actions: <Widget>[
+                    TextButton(
+                      onPressed: () => Navigator.of(dialogContext).pop(),
+                      child: const Text('Cancel'),
+                    ),
+                    FilledButton(
+                      onPressed: () {
+                        market.setTickInterval(
+                          Duration(milliseconds: selectedMs.round()),
+                        );
+                        Navigator.of(dialogContext).pop();
+                      },
+                      child: const Text('Apply'),
+                    ),
+                  ],
+                );
+              },
+        );
+      },
     );
   }
 }

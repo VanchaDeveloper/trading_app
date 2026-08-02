@@ -11,6 +11,10 @@ abstract class MarketDataService {
   /// Starts the feed (idempotent — calling twice is a no-op).
   void start();
 
+  /// Changes the internal tick cadence. This is used by the debug UI so
+  /// reviewers can demonstrate the stress-test scenario live.
+  void setTickInterval(Duration tickInterval);
+
   /// Stops the feed and releases the underlying timer.
   void dispose();
 
