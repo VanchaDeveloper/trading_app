@@ -10,34 +10,20 @@ import '../../trading/domain/order.dart';
 import '../domain/holding.dart';
 import '../domain/holdings_calculator.dart';
 
-enum HoldingsSort { pnl, value, symbol }
-
 class HoldingsState {
-  const HoldingsState({
-    required this.holdings,
-    required this.totalCurrentValue,
-    required this.totalInvested,
-    required this.sortBy,
-  });
+  const HoldingsState({required this.holdings, required this.totalCurrentValue, required this.totalInvested});
 
   factory HoldingsState.empty() => const HoldingsState(
-    holdings: <Holding>[],
-    totalCurrentValue: Money.zero,
-    totalInvested: Money.zero,
-    sortBy: HoldingsSort.pnl,
-  );
+        holdings: <Holding>[],
+        totalCurrentValue: Money.zero,
+        totalInvested: Money.zero,
+      );
 
   final List<Holding> holdings;
   final Money totalCurrentValue;
   final Money totalInvested;
-  final HoldingsSort sortBy;
 
   Money get totalPnl => totalCurrentValue - totalInvested;
-
-  double get totalPnlPercent {
-    if (totalInvested.paise == 0) return 0.0;
-    return (totalPnl.paise / totalInvested.paise) * 100;
-  }
 }
 
 /// Holdings must react to two fundamentally different kinds of events, and
@@ -67,24 +53,22 @@ class HoldingsState {
 /// list right after a trade.
 class HoldingsCubit extends Cubit<HoldingsState> {
   HoldingsCubit({
-    required this._orderRepository,
-    required this._marketDataService,
+    required OrderRepository orderRepository,
+    required MarketDataService marketDataService,
     required OrderEventBus orderEventBus,
-    this._calculator = const HoldingsCalculator(),
+    HoldingsCalculator calculator = const HoldingsCalculator(),
     Duration priceRefreshThrottle = const Duration(milliseconds: 800),
-  }) : super(HoldingsState.empty()) {
+  })  : _orderRepository = orderRepository,
+        _marketDataService = marketDataService,
+        _calculator = calculator,
+        super(HoldingsState.empty()) {
     _deriveFromOrders(); // initial load
     // TRIGGER 1 — order-driven: fires immediately (no throttling) whenever
     // any order is executed anywhere in the app.
-    _orderSub = orderEventBus.onOrderExecuted.listen(
-      (Order _) => _deriveFromOrders(),
-    );
+    _orderSub = orderEventBus.onOrderExecuted.listen((Order _) => _deriveFromOrders());
     // TRIGGER 2 — price-driven: fires on a fixed cadence, independent of
     // trigger 1, and only touches price/P&L fields.
-    _priceRefreshTimer = Timer.periodic(
-      priceRefreshThrottle,
-      (_) => _refreshPricesOnly(),
-    );
+    _priceRefreshTimer = Timer.periodic(priceRefreshThrottle, (_) => _refreshPricesOnly());
   }
 
   final OrderRepository _orderRepository;
@@ -93,19 +77,13 @@ class HoldingsCubit extends Cubit<HoldingsState> {
   late final Timer _priceRefreshTimer;
   late final StreamSubscription<Order> _orderSub;
 
-  void setSort(HoldingsSort sortBy) {
-    if (state.sortBy == sortBy) return;
-    emit(_toState(state.holdings, sortBy: sortBy));
-  }
-
   void _deriveFromOrders() {
     final orders = _orderRepository.getAll();
     final Map<String, Money> latestPrices = <String, Money>{
-      for (final order in orders)
-        order.symbol: _marketDataService.latestTick(order.symbol).price,
+      for (final order in orders) order.symbol: _marketDataService.latestTick(order.symbol).price,
     };
     final holdings = _calculator.derive(orders, latestPrices);
-    emit(_toState(holdings, sortBy: state.sortBy));
+    emit(_toState(holdings));
   }
 
   /// TRIGGER 2 — throttled, price-only refresh. Deliberately does NOT
@@ -123,50 +101,17 @@ class HoldingsCubit extends Cubit<HoldingsState> {
         currentPrice: latestPrice,
       );
     }).toList();
-    emit(_toState(refreshed, sortBy: state.sortBy));
+    emit(_toState(refreshed));
   }
 
-  HoldingsState _toState(
-    List<Holding> holdings, {
-    required HoldingsSort sortBy,
-  }) {
-    final List<Holding> sorted = _sortHoldings(
-      List<Holding>.of(holdings),
-      sortBy,
-    );
+  HoldingsState _toState(List<Holding> holdings) {
     Money totalCurrent = Money.zero;
     Money totalInvested = Money.zero;
-    for (final Holding h in sorted) {
+    for (final Holding h in holdings) {
       totalCurrent += h.currentValue;
       totalInvested += h.investedAmount;
     }
-    return HoldingsState(
-      holdings: sorted,
-      totalCurrentValue: totalCurrent,
-      totalInvested: totalInvested,
-      sortBy: sortBy,
-    );
-  }
-
-  List<Holding> _sortHoldings(List<Holding> holdings, HoldingsSort sortBy) {
-    switch (sortBy) {
-      case HoldingsSort.pnl:
-        holdings.sort(
-          (Holding a, Holding b) =>
-              b.unrealizedPnl.paise.compareTo(a.unrealizedPnl.paise),
-        );
-        break;
-      case HoldingsSort.value:
-        holdings.sort(
-          (Holding a, Holding b) =>
-              b.currentValue.paise.compareTo(a.currentValue.paise),
-        );
-        break;
-      case HoldingsSort.symbol:
-        holdings.sort((Holding a, Holding b) => a.symbol.compareTo(b.symbol));
-        break;
-    }
-    return holdings;
+    return HoldingsState(holdings: holdings, totalCurrentValue: totalCurrent, totalInvested: totalInvested);
   }
 
   @override

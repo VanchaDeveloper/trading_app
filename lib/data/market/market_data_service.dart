@@ -11,10 +11,6 @@ abstract class MarketDataService {
   /// Starts the feed (idempotent — calling twice is a no-op).
   void start();
 
-  /// Changes the internal tick cadence. This is used by the debug UI so
-  /// reviewers can demonstrate the stress-test scenario live.
-  void setTickInterval(Duration tickInterval);
-
   /// Stops the feed and releases the underlying timer.
   void dispose();
 
@@ -26,4 +22,14 @@ abstract class MarketDataService {
   /// The latest known tick for a symbol, read synchronously without
   /// subscribing. Used by one-shot reads (e.g. computing an order total).
   PriceTick latestTick(String symbol);
+
+  /// The interval between heartbeats. Exposed so UI (e.g. a debug control)
+  /// can display the current rate.
+  Duration get tickInterval;
+
+  /// Changes how often the feed ticks, taking effect on the next
+  /// heartbeat. This is what makes the tick rate configurable at runtime
+  /// (rather than only via a recompiled constant) — e.g. to demonstrate
+  /// the feed holding up under a stress-level rate (5+ ticks/sec/symbol).
+  void setTickInterval(Duration interval);
 }

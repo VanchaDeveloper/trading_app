@@ -25,23 +25,23 @@ class Stock {
   String toString() => symbol;
 }
 
-/// The fixed, closed universe of 10 stocks this app knows about. Deliberately
-/// static (not fetched from a network) so the whole app is deterministic and
-/// works fully offline.
+/// The fixed, closed universe of 10 stocks this app knows about, using their
+/// real NSE trading symbols. Deliberately static (not fetched from a
+/// network) so the whole app is deterministic and works fully offline.
 class StockUniverse {
   StockUniverse._();
 
   static const List<Stock> all = <Stock>[
-    Stock(symbol: 'RELI', name: 'Reliance Industries', seedPrice: Money.fromPaise(284550)),
+    Stock(symbol: 'RELIANCE', name: 'Reliance Industries', seedPrice: Money.fromPaise(284550)),
     Stock(symbol: 'TCS', name: 'Tata Consultancy Services', seedPrice: Money.fromPaise(384200)),
-    Stock(symbol: 'HDFC', name: 'HDFC Bank', seedPrice: Money.fromPaise(164325)),
     Stock(symbol: 'INFY', name: 'Infosys', seedPrice: Money.fromPaise(148075)),
-    Stock(symbol: 'ICICI', name: 'ICICI Bank', seedPrice: Money.fromPaise(122050)),
-    Stock(symbol: 'BHARTI', name: 'Bharti Airtel', seedPrice: Money.fromPaise(156800)),
-    Stock(symbol: 'ITC', name: 'ITC Limited', seedPrice: Money.fromPaise(43620)),
+    Stock(symbol: 'HDFCBANK', name: 'HDFC Bank', seedPrice: Money.fromPaise(164325)),
+    Stock(symbol: 'ICICIBANK', name: 'ICICI Bank', seedPrice: Money.fromPaise(122050)),
     Stock(symbol: 'SBIN', name: 'State Bank of India', seedPrice: Money.fromPaise(81475)),
+    Stock(symbol: 'ITC', name: 'ITC Limited', seedPrice: Money.fromPaise(43620)),
     Stock(symbol: 'LT', name: 'Larsen & Toubro', seedPrice: Money.fromPaise(362900)),
-    Stock(symbol: 'MARUTI', name: 'Maruti Suzuki', seedPrice: Money.fromPaise(1234500)),
+    Stock(symbol: 'BHARTIARTL', name: 'Bharti Airtel', seedPrice: Money.fromPaise(156800)),
+    Stock(symbol: 'AXISBANK', name: 'Axis Bank', seedPrice: Money.fromPaise(123000)),
   ];
 
   static Stock bySymbol(String symbol) =>

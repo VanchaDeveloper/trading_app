@@ -33,32 +33,7 @@ class _HoldingsView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Holdings'),
-        actions: <Widget>[
-          PopupMenuButton<HoldingsSort>(
-            tooltip: 'Sort holdings',
-            initialValue: context.read<HoldingsCubit>().state.sortBy,
-            onSelected: (HoldingsSort sortBy) =>
-                context.read<HoldingsCubit>().setSort(sortBy),
-            itemBuilder: (BuildContext context) =>
-                <PopupMenuEntry<HoldingsSort>>[
-                  const PopupMenuItem<HoldingsSort>(
-                    value: HoldingsSort.pnl,
-                    child: Text('Sort: P&L'),
-                  ),
-                  const PopupMenuItem<HoldingsSort>(
-                    value: HoldingsSort.value,
-                    child: Text('Sort: Value'),
-                  ),
-                  const PopupMenuItem<HoldingsSort>(
-                    value: HoldingsSort.symbol,
-                    child: Text('Sort: Symbol'),
-                  ),
-                ],
-          ),
-        ],
-      ),
+      appBar: AppBar(title: const Text('Holdings')),
       body: BlocBuilder<HoldingsCubit, HoldingsState>(
         builder: (BuildContext context, HoldingsState state) {
           if (state.holdings.isEmpty) {
@@ -67,11 +42,8 @@ class _HoldingsView extends StatelessWidget {
             );
           }
 
-          final Color pnlColor = MarketColors.forChange(
-            state.totalPnl.paise.sign,
-          );
+          final Color pnlColor = MarketColors.forChange(state.totalPnl.paise.sign);
           final String sign = state.totalPnl.paise.sign > 0 ? '+' : '';
-          final String pnlPercentSign = state.totalPnlPercent >= 0 ? '+' : '';
 
           return Column(
             children: <Widget>[
@@ -83,36 +55,13 @@ class _HoldingsView extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: <Widget>[
-                        Text(
-                          'Portfolio Value',
-                          style: Theme.of(context).textTheme.bodySmall,
-                        ),
+                        Text('Portfolio Value', style: Theme.of(context).textTheme.bodySmall),
+                        const SizedBox(height: 4),
+                        Text(state.totalCurrentValue.format(), style: AppTheme.tabularFiguresLarge),
                         const SizedBox(height: 4),
                         Text(
-                          state.totalCurrentValue.format(),
-                          style: AppTheme.tabularFiguresLarge,
-                        ),
-                        const SizedBox(height: 12),
-                        Row(
-                          children: <Widget>[
-                            Expanded(
-                              child: Text(
-                                'Invested: ${state.totalInvested.format()}',
-                                style: Theme.of(context).textTheme.bodySmall,
-                              ),
-                            ),
-                            Expanded(
-                              child: Align(
-                                alignment: Alignment.centerRight,
-                                child: Text(
-                                  'P&L: $sign${state.totalPnl.format()} ($pnlPercentSign${state.totalPnlPercent.toStringAsFixed(2)}%)',
-                                  style: AppTheme.tabularFigures.copyWith(
-                                    color: pnlColor,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
+                          '$sign${state.totalPnl.format()}',
+                          style: AppTheme.tabularFigures.copyWith(color: pnlColor),
                         ),
                       ],
                     ),
@@ -123,16 +72,14 @@ class _HoldingsView extends StatelessWidget {
               Expanded(
                 child: ListView.separated(
                   itemCount: state.holdings.length,
-                  separatorBuilder: (_, _) => const Divider(height: 1),
+                  separatorBuilder: (_, __) => const Divider(height: 1),
                   itemBuilder: (BuildContext context, int index) {
                     final holding = state.holdings[index];
                     return HoldingRow(
                       holding: holding,
                       onTap: () => Navigator.of(context).push(
                         MaterialPageRoute<void>(
-                          builder: (_) => BuySellTicketPage(
-                            stock: StockUniverse.bySymbol(holding.symbol),
-                          ),
+                          builder: (_) => BuySellTicketPage(stock: StockUniverse.bySymbol(holding.symbol)),
                         ),
                       ),
                     );

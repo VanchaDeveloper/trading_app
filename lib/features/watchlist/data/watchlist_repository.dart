@@ -5,162 +5,140 @@ import '../../../core/result.dart';
 import '../../../core/stock.dart';
 import '../domain/watchlist.dart';
 
-/// Persists the user's named watchlists as a Hive map. The repository keeps
-/// the full catalog in one box and exposes the currently selected one through
-/// the app's watchlist pages.
+/// Persists ALL of the user's watchlists as one `List<Map>` under a single
+/// Hive key. Storing the whole collection together (rather than one key
+/// per watchlist) means a create/rename/delete/reorder is always a single
+/// atomic `box.put`, so there's no window where two keys could be read out
+/// of sync with each other after a crash mid-write.
 class WatchlistRepository {
   WatchlistRepository(this._box);
 
-  static const String _selectedIdKey = 'selected_watchlist_id';
-  static const String _defaultWatchlistName = 'Default';
-  static const List<String> _defaultSymbols = <String>[
-    'RELI',
-    'TCS',
-    'HDFC',
-    'INFY',
-    'ICICI',
-  ];
+  static const String _watchlistsKey = 'watchlists';
+
+  /// Default watchlist shown on first-ever launch, before the user has
+  /// created anything themselves.
+  static const String _defaultId = 'default';
+  static const String _defaultName = 'My Watchlist';
+  static const List<String> _defaultSymbols = <String>['RELIANCE', 'TCS', 'HDFCBANK', 'INFY', 'ICICIBANK'];
 
   final Box<dynamic> _box;
 
   Future<void> ensureSeeded() async {
-    const String id = 'default';
-    if (!_box.containsKey(id)) {
-      await _box.put(
-        id,
-        Watchlist(
-          id: id,
-          name: _defaultWatchlistName,
-          symbols: List<String>.of(_defaultSymbols),
-        ).toMap(),
-      );
-    }
-    if (!_box.containsKey(_selectedIdKey)) {
-      await _box.put(_selectedIdKey, id);
+    if (!_box.containsKey(_watchlistsKey)) {
+      final Watchlist seed = const Watchlist(id: _defaultId, name: _defaultName, symbols: _defaultSymbols);
+      await _box.put(_watchlistsKey, <Map<String, dynamic>>[seed.toMap()]);
     }
   }
 
+  /// All watchlists, in persisted (creation) order. Any symbol that no
+  /// longer exists in [StockUniverse] is silently dropped from the read
+  /// path (defensive — the universe is fixed today, but this keeps reads
+  /// safe if it ever changes), and duplicate symbols within one watchlist
+  /// are de-duplicated defensively too.
   List<Watchlist> getAll() {
-    final List<Watchlist> result = <Watchlist>[];
-    for (final dynamic raw in _box.values) {
-      if (raw is Map<dynamic, dynamic>) {
-        result.add(Watchlist.fromMap(raw));
+    final List<dynamic> raw = (_box.get(_watchlistsKey) as List<dynamic>?) ?? const <dynamic>[];
+    return raw.map((dynamic entry) {
+      final Watchlist w = Watchlist.fromMap(entry as Map<dynamic, dynamic>);
+      final List<String> cleaned = <String>[];
+      final Set<String> seen = <String>{};
+      for (final String symbol in w.symbols) {
+        if (!seen.add(symbol)) continue;
+        if (StockUniverse.all.any((Stock s) => s.symbol == symbol)) cleaned.add(symbol);
       }
-    }
-    result.sort((Watchlist a, Watchlist b) => a.name.compareTo(b.name));
-    return result;
+      return w.copyWith(symbols: cleaned);
+    }).toList(growable: false);
   }
 
-  Watchlist? getSelected() {
-    final String? selectedId = _box.get(_selectedIdKey) as String?;
-    if (selectedId == null) return null;
-    final dynamic raw = _box.get(selectedId);
-    if (raw is Map<dynamic, dynamic>) {
-      return Watchlist.fromMap(raw);
+  Watchlist? getById(String id) {
+    for (final Watchlist w in getAll()) {
+      if (w.id == id) return w;
     }
     return null;
   }
 
-  List<Stock> getActiveStocks() => getSelected()?.stocks ?? <Stock>[];
+  /// Resolves a watchlist's symbols to live [Stock]s, in display order.
+  List<Stock> stocksFor(Watchlist watchlist) =>
+      watchlist.symbols.map(StockUniverse.bySymbol).toList(growable: false);
 
-  Future<Result<bool>> create(String name) async {
-    final String id = DateTime.now().microsecondsSinceEpoch.toString();
-    final Watchlist watchlist = Watchlist(
-      id: id,
-      name: name.trim(),
-      symbols: <String>[],
+  Future<Result<bool>> _persistAll(List<Watchlist> watchlists) async {
+    try {
+      await _box.put(_watchlistsKey, watchlists.map((Watchlist w) => w.toMap()).toList(growable: false));
+      return const Ok<bool>(true);
+    } catch (e) {
+      return Err<bool>(StorageFailure(e.toString()));
+    }
+  }
+
+  // ---- Watchlist-level operations (create / rename / delete) ----
+
+  Future<Result<Watchlist>> create(String name) async {
+    final String trimmed = name.trim();
+    if (trimmed.isEmpty) {
+      return const Err<Watchlist>(StorageFailure('Watchlist name cannot be empty.'));
+    }
+    final Watchlist created = Watchlist(
+      id: DateTime.now().microsecondsSinceEpoch.toString(),
+      name: trimmed,
+      symbols: const <String>[],
     );
-    try {
-      await _box.put(id, watchlist.toMap());
-      await _box.put(_selectedIdKey, id);
-      return const Ok<bool>(true);
-    } catch (e) {
-      return Err<bool>(StorageFailure(e.toString()));
-    }
-  }
-
-  Future<Result<bool>> rename(String id, String name) async {
-    final dynamic raw = _box.get(id);
-    if (raw is! Map<dynamic, dynamic>) return const Ok<bool>(true);
-    final Watchlist existing = Watchlist.fromMap(raw);
-    final Watchlist updated = existing.copyWith(name: name.trim());
-    try {
-      await _box.put(id, updated.toMap());
-      return const Ok<bool>(true);
-    } catch (e) {
-      return Err<bool>(StorageFailure(e.toString()));
-    }
-  }
-
-  Future<Result<bool>> delete(String id) async {
-    try {
-      await _box.delete(id);
-      final String? selectedId = _box.get(_selectedIdKey) as String?;
-      if (selectedId == id) {
-        final List<Watchlist> remaining = getAll();
-        if (remaining.isNotEmpty) {
-          await _box.put(_selectedIdKey, remaining.first.id);
-        }
-      }
-      return const Ok<bool>(true);
-    } catch (e) {
-      return Err<bool>(StorageFailure(e.toString()));
-    }
-  }
-
-  Future<Result<bool>> select(String id) async {
-    try {
-      await _box.put(_selectedIdKey, id);
-      return const Ok<bool>(true);
-    } catch (e) {
-      return Err<bool>(StorageFailure(e.toString()));
-    }
-  }
-
-  Future<Result<bool>> add(Stock stock) async {
-    final Watchlist? selected = getSelected();
-    if (selected == null) return const Ok<bool>(true);
-    if (selected.symbols.contains(stock.symbol)) return const Ok<bool>(true);
-    final Watchlist updated = selected.copyWith(
-      symbols: <String>[...selected.symbols, stock.symbol],
+    final Result<bool> result = await _persistAll(<Watchlist>[...getAll(), created]);
+    return result.fold<Result<Watchlist>>(
+      (Failure f) => Err<Watchlist>(f),
+      (bool _) => Ok<Watchlist>(created),
     );
-    try {
-      await _box.put(selected.id, updated.toMap());
-      return const Ok<bool>(true);
-    } catch (e) {
-      return Err<bool>(StorageFailure(e.toString()));
-    }
   }
 
-  Future<Result<bool>> remove(Stock stock) async {
-    final Watchlist? selected = getSelected();
-    if (selected == null) return const Ok<bool>(true);
-    final Watchlist updated = selected.copyWith(
-      symbols: <String>[...selected.symbols]
-        ..removeWhere((String symbol) => symbol == stock.symbol),
-    );
-    try {
-      await _box.put(selected.id, updated.toMap());
-      return const Ok<bool>(true);
-    } catch (e) {
-      return Err<bool>(StorageFailure(e.toString()));
+  Future<Result<bool>> rename(String watchlistId, String newName) async {
+    final String trimmed = newName.trim();
+    if (trimmed.isEmpty) {
+      return const Err<bool>(StorageFailure('Watchlist name cannot be empty.'));
     }
+    final List<Watchlist> updated = getAll()
+        .map((Watchlist w) => w.id == watchlistId ? w.copyWith(name: trimmed) : w)
+        .toList(growable: false);
+    return _persistAll(updated);
   }
 
-  Future<Result<bool>> reorder(int oldIndex, int newIndex) async {
-    final Watchlist? selected = getSelected();
-    if (selected == null) return const Ok<bool>(true);
-    final List<String> current = List<String>.of(selected.symbols);
-    if (oldIndex < 0 || oldIndex >= current.length) return const Ok<bool>(true);
-    final String moved = current.removeAt(oldIndex);
-    final int clampedNewIndex = newIndex.clamp(0, current.length).toInt();
-    current.insert(clampedNewIndex, moved);
-    final Watchlist updated = selected.copyWith(symbols: current);
-    try {
-      await _box.put(selected.id, updated.toMap());
-      return const Ok<bool>(true);
-    } catch (e) {
-      return Err<bool>(StorageFailure(e.toString()));
-    }
+  Future<Result<bool>> delete(String watchlistId) async {
+    final List<Watchlist> updated = getAll().where((Watchlist w) => w.id != watchlistId).toList(growable: false);
+    return _persistAll(updated);
+  }
+
+  // ---- Stock-level operations within one watchlist ----
+
+  Future<Result<bool>> addStock(String watchlistId, Stock stock) async {
+    final List<Watchlist> all = getAll();
+    final List<Watchlist> updated = all.map((Watchlist w) {
+      if (w.id != watchlistId) return w;
+      if (w.symbols.contains(stock.symbol)) return w; // already present in THIS watchlist, no-op
+      return w.copyWith(symbols: <String>[...w.symbols, stock.symbol]);
+    }).toList(growable: false);
+    return _persistAll(updated);
+  }
+
+  Future<Result<bool>> removeStock(String watchlistId, Stock stock) async {
+    final List<Watchlist> updated = getAll().map((Watchlist w) {
+      if (w.id != watchlistId) return w;
+      return w.copyWith(symbols: w.symbols.where((String s) => s != stock.symbol).toList(growable: false));
+    }).toList(growable: false);
+    return _persistAll(updated);
+  }
+
+  /// Moves the stock at [oldIndex] to [newIndex] within [watchlistId],
+  /// matching the semantics Flutter's `ReorderableListView.onReorder`
+  /// callback expects (`newIndex` is the index *after* removal from
+  /// `oldIndex`).
+  Future<Result<bool>> reorderStock(String watchlistId, int oldIndex, int newIndex) async {
+    final List<Watchlist> all = getAll();
+    final List<Watchlist> updated = all.map((Watchlist w) {
+      if (w.id != watchlistId) return w;
+      if (oldIndex < 0 || oldIndex >= w.symbols.length) return w;
+      final List<String> symbols = List<String>.of(w.symbols);
+      final String moved = symbols.removeAt(oldIndex);
+      final int clampedNewIndex = newIndex.clamp(0, symbols.length).toInt();
+      symbols.insert(clampedNewIndex, moved);
+      return w.copyWith(symbols: symbols);
+    }).toList(growable: false);
+    return _persistAll(updated);
   }
 }

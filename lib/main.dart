@@ -4,7 +4,7 @@ import 'core/theme.dart';
 import 'di/service_locator.dart';
 import 'features/holdings/presentation/holdings_page.dart';
 import 'features/live_prices/presentation/live_prices_page.dart';
-import 'features/watchlist/presentation/watchlist_page.dart';
+import 'features/watchlist/presentation/watchlists_list_page.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -13,9 +13,7 @@ Future<void> main() async {
 }
 
 class TradingApp extends StatelessWidget {
-  const TradingApp({super.key, this.home});
-
-  final Widget? home;
+  const TradingApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -25,7 +23,7 @@ class TradingApp extends StatelessWidget {
       theme: AppTheme.dark,
       darkTheme: AppTheme.dark,
       themeMode: ThemeMode.dark,
-      home: home ?? const RootShell(),
+      home: const RootShell(),
     );
   }
 }
@@ -50,7 +48,7 @@ class _RootShellState extends State<RootShell> {
   int _index = 0;
 
   static const List<Widget> _tabs = <Widget>[
-    WatchlistPage(),
+    WatchlistsListPage(),
     LivePricesPage(),
     HoldingsPage(),
   ];
@@ -63,21 +61,9 @@ class _RootShellState extends State<RootShell> {
         selectedIndex: _index,
         onDestinationSelected: (int i) => setState(() => _index = i),
         destinations: const <NavigationDestination>[
-          NavigationDestination(
-            icon: Icon(Icons.star_outline),
-            selectedIcon: Icon(Icons.star),
-            label: 'Watchlist',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.show_chart_outlined),
-            selectedIcon: Icon(Icons.show_chart),
-            label: 'Live Prices',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.pie_chart_outline),
-            selectedIcon: Icon(Icons.pie_chart),
-            label: 'Holdings',
-          ),
+          NavigationDestination(icon: Icon(Icons.star_outline), selectedIcon: Icon(Icons.star), label: 'Watchlist'),
+          NavigationDestination(icon: Icon(Icons.show_chart_outlined), selectedIcon: Icon(Icons.show_chart), label: 'Live Prices'),
+          NavigationDestination(icon: Icon(Icons.pie_chart_outline), selectedIcon: Icon(Icons.pie_chart), label: 'Holdings'),
         ],
       ),
     );

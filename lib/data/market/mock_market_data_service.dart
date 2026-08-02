@@ -25,12 +25,14 @@ import 'price_tick.dart';
 ///   the seed price so the mock feed can never wander into an absurd
 ///   (e.g. negative or 100x) price over a long session.
 class MockMarketDataService implements MarketDataService {
-  MockMarketDataService({
-    Random? random,
-    this._tickInterval = const Duration(milliseconds: 200),
-  }) : _random = random ?? Random();
+  MockMarketDataService({Random? random, Duration? tickInterval})
+      : _random = random ?? Random(),
+        _tickInterval = tickInterval ?? defaultTickInterval;
 
-  Duration _tickInterval;
+  /// Default heartbeat: one tick per symbol every 2 seconds. Kept as a
+  /// public constant (rather than buried private) so callers — including
+  /// a debug rate-control UI — have a named "normal" rate to reset to.
+  static const Duration defaultTickInterval = Duration(seconds: 2);
 
   /// Max fractional move per tick, e.g. 0.006 = up to 0.6% per tick.
   static const double _maxStepFraction = 0.006;
@@ -39,10 +41,25 @@ class MockMarketDataService implements MarketDataService {
   static const double _maxDriftFraction = 0.15;
 
   final Random _random;
-  final Map<String, ValueNotifier<PriceTick>> _notifiers =
-      <String, ValueNotifier<PriceTick>>{};
+  final Map<String, ValueNotifier<PriceTick>> _notifiers = <String, ValueNotifier<PriceTick>>{};
   Timer? _timer;
   bool _started = false;
+  Duration _tickInterval;
+
+  @override
+  Duration get tickInterval => _tickInterval;
+
+  @override
+  void setTickInterval(Duration interval) {
+    _tickInterval = interval;
+    // If already running, restart the heartbeat at the new cadence.
+    // Notifiers themselves are untouched, so no subscriber ever
+    // re-subscribes or loses its current value — only the timing changes.
+    if (_started) {
+      _timer?.cancel();
+      _timer = Timer.periodic(_tickInterval, (_) => _tickAll());
+    }
+  }
 
   @override
   void start() {
@@ -71,8 +88,7 @@ class MockMarketDataService implements MarketDataService {
     final int previousPaise = previous.price.paise;
 
     // Random step as a fraction of the current price, in [-max, +max].
-    final double stepFraction =
-        (_random.nextDouble() * 2 - 1) * _maxStepFraction;
+    final double stepFraction = (_random.nextDouble() * 2 - 1) * _maxStepFraction;
     final int stepPaise = (previousPaise * stepFraction).round();
 
     int nextPaise = previousPaise + stepPaise;
@@ -95,18 +111,7 @@ class MockMarketDataService implements MarketDataService {
       previousClose: stock.seedPrice,
       changeAmount: change,
       changeSign: change.paise.sign,
-      timestamp: DateTime.now(),
     );
-  }
-
-  @override
-  void setTickInterval(Duration tickInterval) {
-    if (tickInterval <= Duration.zero) return;
-    _tickInterval = tickInterval;
-    if (_started) {
-      _timer?.cancel();
-      _timer = Timer.periodic(_tickInterval, (_) => _tickAll());
-    }
   }
 
   @override

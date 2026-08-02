@@ -1,5 +1,7 @@
-import '../../../core/stock.dart';
-
+/// One user-created watchlist: a name plus an ordered list of symbols.
+/// Order in [symbols] IS display order, so reordering rows is just
+/// "persist this list in its new order" — no separate `position` field to
+/// keep in sync.
 class Watchlist {
   const Watchlist({
     required this.id,
@@ -7,36 +9,33 @@ class Watchlist {
     required this.symbols,
   });
 
+  /// Stable identity, independent of [name] — this is what lets a
+  /// watchlist be renamed without losing its place in storage, its
+  /// navigation route, or its identity relative to other watchlists.
   final String id;
+
   final String name;
   final List<String> symbols;
 
-  List<Stock> get stocks => symbols
-      .where((String symbol) => StockUniverse.all.any((Stock s) => s.symbol == symbol))
-      .map((String symbol) => StockUniverse.bySymbol(symbol))
-      .toList(growable: false);
-
-  Watchlist copyWith({String? id, String? name, List<String>? symbols}) {
+  Watchlist copyWith({String? name, List<String>? symbols}) {
     return Watchlist(
-      id: id ?? this.id,
+      id: id,
       name: name ?? this.name,
-      symbols: symbols ?? List<String>.of(this.symbols),
+      symbols: symbols ?? this.symbols,
     );
   }
 
   Map<String, dynamic> toMap() => <String, dynamic>{
         'id': id,
         'name': name,
-        'symbols': List<String>.of(symbols),
+        'symbols': symbols,
       };
 
   factory Watchlist.fromMap(Map<dynamic, dynamic> map) {
     return Watchlist(
       id: map['id'] as String,
       name: map['name'] as String,
-      symbols: (map['symbols'] as List<dynamic>? ?? <dynamic>[])
-          .map((dynamic value) => value.toString())
-          .toList(growable: false),
+      symbols: (map['symbols'] as List<dynamic>).cast<String>(),
     );
   }
 }

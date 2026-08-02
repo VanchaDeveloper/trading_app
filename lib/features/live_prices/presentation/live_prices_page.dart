@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/stock.dart';
 import '../../../data/market/market_data_service.dart';
+import '../../../data/market/mock_market_data_service.dart';
 import '../../../di/service_locator.dart';
 import '../../../widgets/stock_row.dart';
 import '../../trading/presentation/buy_sell_ticket_page.dart';
@@ -10,8 +11,31 @@ import '../../trading/presentation/buy_sell_ticket_page.dart';
 /// current price and change, ticking live off the shared [MarketDataService].
 /// Deliberately the thinnest feature — no persistence, no domain logic —
 /// since its only job is to visualize the feed.
-class LivePricesPage extends StatelessWidget {
+///
+/// Also hosts a debug tick-rate control (the speed icon in the app bar) so
+/// the feed's configurability is something a reviewer can actually
+/// exercise at runtime — including cranking it to a stress-test rate — not
+/// just a constant that would require a recompile to change.
+class LivePricesPage extends StatefulWidget {
   const LivePricesPage({super.key});
+
+  @override
+  State<LivePricesPage> createState() => _LivePricesPageState();
+}
+
+class _TickRatePreset {
+  const _TickRatePreset(this.label, this.interval);
+  final String label;
+  final Duration interval;
+}
+
+class _LivePricesPageState extends State<LivePricesPage> {
+  static const List<_TickRatePreset> _presets = <_TickRatePreset>[
+    _TickRatePreset('Normal (1 tick/2s per stock)', Duration(seconds: 2)),
+    _TickRatePreset('Fast (2 ticks/s per stock)', Duration(milliseconds: 500)),
+    _TickRatePreset('Stress (5 ticks/s per stock \u2248 50/s overall)', Duration(milliseconds: 200)),
+    _TickRatePreset('Extreme (10 ticks/s per stock \u2248 100/s overall)', Duration(milliseconds: 100)),
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -21,16 +45,35 @@ class LivePricesPage extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Live Prices'),
         actions: <Widget>[
-          IconButton(
-            tooltip: 'Tick rate debug',
-            icon: const Icon(Icons.speed_outlined),
-            onPressed: () => _showTickRateDialog(context, market),
+          PopupMenuButton<Duration>(
+            icon: const Icon(Icons.speed),
+            tooltip: 'Tick rate: ${_labelFor(market.tickInterval)}',
+            onSelected: (Duration interval) {
+              market.setTickInterval(interval);
+              setState(() {}); // refresh the tooltip/subtitle for the new rate
+            },
+            itemBuilder: (BuildContext context) => _presets
+                .map((_TickRatePreset p) => PopupMenuItem<Duration>(value: p.interval, child: Text(p.label)))
+                .toList(growable: false),
           ),
         ],
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(24),
+          child: Padding(
+            padding: const EdgeInsets.only(left: 16, bottom: 6),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                'Feed rate: ${_labelFor(market.tickInterval)}',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ),
+          ),
+        ),
       ),
       body: ListView.separated(
         itemCount: StockUniverse.all.length,
-        separatorBuilder: (_, _) => const Divider(height: 1),
+        separatorBuilder: (_, __) => const Divider(height: 1),
         itemBuilder: (BuildContext context, int index) {
           final stock = StockUniverse.all[index];
           return StockRow(
@@ -47,58 +90,13 @@ class LivePricesPage extends StatelessWidget {
     );
   }
 
-  Future<void> _showTickRateDialog(
-    BuildContext context,
-    MarketDataService market,
-  ) async {
-    const double currentMs = 200;
-    double selectedMs = currentMs;
-
-    await showDialog<void>(
-      context: context,
-      builder: (BuildContext dialogContext) {
-        return StatefulBuilder(
-          builder:
-              (BuildContext context, void Function(void Function()) setState) {
-                return AlertDialog(
-                  title: const Text('Tick rate debug'),
-                  content: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: <Widget>[
-                      const Text('Adjust the mock feed cadence live.'),
-                      const SizedBox(height: 12),
-                      Slider(
-                        value: selectedMs,
-                        min: 50,
-                        max: 1000,
-                        divisions: 19,
-                        label: '${selectedMs.round()} ms',
-                        onChanged: (double value) {
-                          setState(() => selectedMs = value);
-                        },
-                      ),
-                      Text('Current tick interval: ${selectedMs.round()} ms'),
-                    ],
-                  ),
-                  actions: <Widget>[
-                    TextButton(
-                      onPressed: () => Navigator.of(dialogContext).pop(),
-                      child: const Text('Cancel'),
-                    ),
-                    FilledButton(
-                      onPressed: () {
-                        market.setTickInterval(
-                          Duration(milliseconds: selectedMs.round()),
-                        );
-                        Navigator.of(dialogContext).pop();
-                      },
-                      child: const Text('Apply'),
-                    ),
-                  ],
-                );
-              },
-        );
-      },
-    );
+  String _labelFor(Duration interval) {
+    for (final _TickRatePreset preset in _presets) {
+      if (preset.interval == interval) return preset.label;
+    }
+    if (interval == MockMarketDataService.defaultTickInterval) {
+      return _presets.first.label;
+    }
+    return '${interval.inMilliseconds}ms/tick';
   }
 }
