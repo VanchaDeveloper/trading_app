@@ -45,7 +45,6 @@ class _StockRowState extends State<StockRow>
     with SingleTickerProviderStateMixin {
   late final AnimationController _flashController;
   int? _lastPricePaise;
-  Color _flashColor = MarketColors.neutral;
 
   @override
   void initState() {
@@ -71,9 +70,6 @@ class _StockRowState extends State<StockRow>
   void _registerTick(PriceTick tick) {
     final int paise = tick.price.paise;
     if (_lastPricePaise != null && paise != _lastPricePaise) {
-      _flashColor = paise > _lastPricePaise!
-          ? MarketColors.gain
-          : MarketColors.loss;
       _flashController.forward(from: 0);
     }
     _lastPricePaise = paise;
