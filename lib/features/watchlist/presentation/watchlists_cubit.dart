@@ -25,13 +25,15 @@ class WatchlistsState {
 /// screen is immediately visible anywhere else that's showing the same
 /// data, with no cross-cubit sync to get wrong.
 class WatchlistsCubit extends Cubit<WatchlistsState> {
-  WatchlistsCubit(this._repository) : super(WatchlistsState(watchlists: _repository.getAll()));
+  WatchlistsCubit(this._repository)
+    : super(WatchlistsState(watchlists: _repository.getAll()));
 
   final WatchlistRepository _repository;
 
   void _refresh() => emit(WatchlistsState(watchlists: _repository.getAll()));
 
-  List<Stock> stocksFor(Watchlist watchlist) => _repository.stocksFor(watchlist);
+  List<Stock> stocksFor(Watchlist watchlist) =>
+      _repository.stocksFor(watchlist);
 
   Future<void> createWatchlist(String name) async {
     await _repository.create(name);
@@ -58,7 +60,15 @@ class WatchlistsCubit extends Cubit<WatchlistsState> {
     _refresh();
   }
 
-  Future<void> reorderStock(String watchlistId, int oldIndex, int newIndex) async {
+  Future<void> reorderStock(
+    String watchlistId,
+    int oldIndex,
+    int newIndex,
+  ) async {
+    if (oldIndex < newIndex) {
+      newIndex--;
+    }
+
     await _repository.reorderStock(watchlistId, oldIndex, newIndex);
     _refresh();
   }

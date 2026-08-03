@@ -146,11 +146,7 @@ class _StockRowState extends State<StockRow>
             child: content,
             builder: (BuildContext context, Widget? child) {
               // Fades from full flash intensity down to transparent.
-              final double intensity = 1 - _flashController.value;
-              return Container(
-                color: _flashColor.withValues(alpha: 0.16 * intensity),
-                child: child,
-              );
+              return Container(child: child);
             },
           ),
         );

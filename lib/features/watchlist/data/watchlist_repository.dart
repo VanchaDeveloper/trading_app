@@ -170,18 +170,19 @@ class WatchlistRepository {
     int oldIndex,
     int newIndex,
   ) async {
-    final List<Watchlist> all = getAll();
-    final List<Watchlist> updated = all
-        .map((Watchlist w) {
-          if (w.id != watchlistId) return w;
-          if (oldIndex < 0 || oldIndex >= w.symbols.length) return w;
-          final List<String> symbols = List<String>.of(w.symbols);
-          final String moved = symbols.removeAt(oldIndex);
-          final int clampedNewIndex = newIndex.clamp(0, symbols.length).toInt();
-          symbols.insert(clampedNewIndex, moved);
-          return w.copyWith(symbols: symbols);
-        })
-        .toList(growable: false);
+    final all = getAll();
+
+    final updated = all.map((w) {
+      if (w.id != watchlistId) return w;
+
+      final symbols = List<String>.from(w.symbols);
+
+      final moved = symbols.removeAt(oldIndex);
+      symbols.insert(newIndex, moved);
+
+      return w.copyWith(symbols: symbols);
+    }).toList();
+
     return _persistAll(updated);
   }
 }
