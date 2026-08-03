@@ -21,8 +21,10 @@ class MarketColors {
 class AppTheme {
   AppTheme._();
 
-  static const Color _background = Color(0xFF0E1116);
-  static const Color _surface = Color(0xFF171B22);
+  static const Color background = Color(0xFF0E1116);
+  static const Color surface = Color(0xFF171B22);
+  static const Color _background = background;
+  static const Color _surface = surface;
   static const Color _surfaceAlt = Color(0xFF1F242D);
   static const Color _primary = Color(0xFF4C8DFF);
   static const Color _onSurfaceMuted = Color(0xFF8B93A1);
@@ -50,16 +52,13 @@ class AppTheme {
           fontWeight: FontWeight.w600,
         ),
       ),
-      cardTheme: CardThemeData(
-        color: _surface,
-        elevation: 0,
-        margin: EdgeInsets.zero,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      dividerTheme: const DividerThemeData(
+        color: Color(0xFF262C36),
+        thickness: 1,
       ),
-      dividerTheme: const DividerThemeData(color: Color(0xFF262C36), thickness: 1),
       navigationBarTheme: NavigationBarThemeData(
         backgroundColor: _surface,
-        indicatorColor: _primary.withOpacity(0.18),
+        indicatorColor: _primary.withValues(alpha: 0.18),
         labelTextStyle: WidgetStateProperty.all(
           const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
         ),
@@ -69,7 +68,9 @@ class AppTheme {
           backgroundColor: _primary,
           foregroundColor: Colors.white,
           padding: const EdgeInsets.symmetric(vertical: 14),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
         ),
       ),
       textTheme: const TextTheme(

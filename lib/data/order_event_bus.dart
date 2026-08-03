@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import '../../features/trading/domain/order.dart';
+import '../features/trading/domain/order.dart';
 
 /// A tiny broadcast bus that fires whenever an order is successfully
 /// persisted. `HoldingsCubit` subscribes to this for its order-driven

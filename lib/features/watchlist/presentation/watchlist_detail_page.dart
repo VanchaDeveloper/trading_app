@@ -35,7 +35,8 @@ class WatchlistDetailPage extends StatelessWidget {
     final market = ServiceLocator.instance.marketDataService;
 
     return BlocConsumer<WatchlistsCubit, WatchlistsState>(
-      listenWhen: (WatchlistsState previous, WatchlistsState current) => current.byId(watchlistId) == null,
+      listenWhen: (WatchlistsState previous, WatchlistsState current) =>
+          current.byId(watchlistId) == null,
       listener: (BuildContext context, WatchlistsState state) {
         // The watchlist we're viewing no longer exists (deleted elsewhere).
         Navigator.of(context).maybePop();
@@ -72,7 +73,8 @@ class WatchlistDetailPage extends StatelessWidget {
                         FilledButton.icon(
                           icon: const Icon(Icons.add),
                           label: const Text('Add a stock'),
-                          onPressed: () => _showAddSheet(context, cubit, watchlist),
+                          onPressed: () =>
+                              _showAddSheet(context, cubit, watchlist),
                         ),
                       ],
                     ),
@@ -81,7 +83,7 @@ class WatchlistDetailPage extends StatelessWidget {
               : ReorderableListView.builder(
                   buildDefaultDragHandles: false,
                   itemCount: stocks.length,
-                  onReorder: (int oldIndex, int newIndex) =>
+                  onReorderItem: (int oldIndex, int newIndex) =>
                       cubit.reorderStock(watchlist.id, oldIndex, newIndex),
                   itemBuilder: (BuildContext context, int index) {
                     final Stock stock = stocks[index];
@@ -92,15 +94,22 @@ class WatchlistDetailPage extends StatelessWidget {
                         stock: stock,
                         tickerListenable: market.tickerFor(stock.symbol),
                         onTap: () => Navigator.of(context).push(
-                          MaterialPageRoute<void>(builder: (_) => BuySellTicketPage(stock: stock)),
+                          MaterialPageRoute<void>(
+                            builder: (_) => BuySellTicketPage(stock: stock),
+                          ),
                         ),
                         trailing: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: <Widget>[
                             IconButton(
-                              icon: const Icon(Icons.close, color: MarketColors.loss, size: 20),
+                              icon: const Icon(
+                                Icons.close,
+                                color: MarketColors.loss,
+                                size: 20,
+                              ),
                               tooltip: 'Remove',
-                              onPressed: () => cubit.removeStock(watchlist.id, stock),
+                              onPressed: () =>
+                                  cubit.removeStock(watchlist.id, stock),
                             ),
                             ReorderableDragStartListener(
                               index: index,
@@ -120,7 +129,11 @@ class WatchlistDetailPage extends StatelessWidget {
     );
   }
 
-  void _showAddSheet(BuildContext context, WatchlistsCubit cubit, Watchlist watchlist) {
+  void _showAddSheet(
+    BuildContext context,
+    WatchlistsCubit cubit,
+    Watchlist watchlist,
+  ) {
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -136,18 +149,24 @@ class WatchlistDetailPage extends StatelessWidget {
               return BlocBuilder<WatchlistsCubit, WatchlistsState>(
                 builder: (BuildContext context, WatchlistsState state) {
                   final Watchlist? current = state.byId(watchlist.id);
-                  final Set<String> already = (current ?? watchlist).symbols.toSet();
-                  final List<Stock> addable =
-                      StockUniverse.all.where((Stock s) => !already.contains(s.symbol)).toList(growable: false);
+                  final Set<String> already = (current ?? watchlist).symbols
+                      .toSet();
+                  final List<Stock> addable = StockUniverse.all
+                      .where((Stock s) => !already.contains(s.symbol))
+                      .toList(growable: false);
 
                   if (addable.isEmpty) {
-                    return const Center(child: Text('All 10 stocks are already in this watchlist.'));
+                    return const Center(
+                      child: Text(
+                        'All 10 stocks are already in this watchlist.',
+                      ),
+                    );
                   }
                   return ListView.separated(
                     controller: scrollController,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     itemCount: addable.length,
-                    separatorBuilder: (_, __) => const Divider(height: 1),
+                    separatorBuilder: (_, _) => const Divider(height: 1),
                     itemBuilder: (BuildContext context, int index) {
                       final Stock stock = addable[index];
                       return ListTile(

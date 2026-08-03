@@ -41,7 +41,8 @@ class StockRow extends StatefulWidget {
   State<StockRow> createState() => _StockRowState();
 }
 
-class _StockRowState extends State<StockRow> with SingleTickerProviderStateMixin {
+class _StockRowState extends State<StockRow>
+    with SingleTickerProviderStateMixin {
   late final AnimationController _flashController;
   int? _lastPricePaise;
   Color _flashColor = MarketColors.neutral;
@@ -49,7 +50,10 @@ class _StockRowState extends State<StockRow> with SingleTickerProviderStateMixin
   @override
   void initState() {
     super.initState();
-    _flashController = AnimationController(vsync: this, duration: const Duration(milliseconds: 550));
+    _flashController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 550),
+    );
   }
 
   @override
@@ -67,7 +71,9 @@ class _StockRowState extends State<StockRow> with SingleTickerProviderStateMixin
   void _registerTick(PriceTick tick) {
     final int paise = tick.price.paise;
     if (_lastPricePaise != null && paise != _lastPricePaise) {
-      _flashColor = paise > _lastPricePaise! ? MarketColors.gain : MarketColors.loss;
+      _flashColor = paise > _lastPricePaise!
+          ? MarketColors.gain
+          : MarketColors.loss;
       _flashController.forward(from: 0);
     }
     _lastPricePaise = paise;
@@ -93,7 +99,10 @@ class _StockRowState extends State<StockRow> with SingleTickerProviderStateMixin
                   children: <Widget>[
                     Text(
                       widget.stock.symbol,
-                      style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 15,
+                      ),
                     ),
                     const SizedBox(height: 2),
                     Text(
@@ -110,7 +119,7 @@ class _StockRowState extends State<StockRow> with SingleTickerProviderStateMixin
                   Text(tick.price.format(), style: AppTheme.tabularFigures),
                   const SizedBox(height: 2),
                   Text(
-                    '$sign${tick.changeAmount.format()} (${sign}${tick.changePercent.toStringAsFixed(2)}%)',
+                    '$sign${tick.changeAmount.format()} ($sign${tick.changePercent.toStringAsFixed(2)}%)',
                     style: AppTheme.tabularFigures.copyWith(
                       fontSize: 12,
                       fontWeight: FontWeight.w500,
@@ -139,7 +148,7 @@ class _StockRowState extends State<StockRow> with SingleTickerProviderStateMixin
               // Fades from full flash intensity down to transparent.
               final double intensity = 1 - _flashController.value;
               return Container(
-                color: _flashColor.withOpacity(0.16 * intensity),
+                color: _flashColor.withValues(alpha: 0.16 * intensity),
                 child: child,
               );
             },

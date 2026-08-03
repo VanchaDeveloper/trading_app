@@ -19,13 +19,23 @@ class WatchlistRepository {
   /// created anything themselves.
   static const String _defaultId = 'default';
   static const String _defaultName = 'My Watchlist';
-  static const List<String> _defaultSymbols = <String>['RELIANCE', 'TCS', 'HDFCBANK', 'INFY', 'ICICIBANK'];
+  static const List<String> _defaultSymbols = <String>[
+    'RELIANCE',
+    'TCS',
+    'HDFCBANK',
+    'INFY',
+    'ICICIBANK',
+  ];
 
   final Box<dynamic> _box;
 
   Future<void> ensureSeeded() async {
     if (!_box.containsKey(_watchlistsKey)) {
-      final Watchlist seed = const Watchlist(id: _defaultId, name: _defaultName, symbols: _defaultSymbols);
+      const Watchlist seed = Watchlist(
+        id: _defaultId,
+        name: _defaultName,
+        symbols: _defaultSymbols,
+      );
       await _box.put(_watchlistsKey, <Map<String, dynamic>>[seed.toMap()]);
     }
   }
@@ -36,17 +46,22 @@ class WatchlistRepository {
   /// safe if it ever changes), and duplicate symbols within one watchlist
   /// are de-duplicated defensively too.
   List<Watchlist> getAll() {
-    final List<dynamic> raw = (_box.get(_watchlistsKey) as List<dynamic>?) ?? const <dynamic>[];
-    return raw.map((dynamic entry) {
-      final Watchlist w = Watchlist.fromMap(entry as Map<dynamic, dynamic>);
-      final List<String> cleaned = <String>[];
-      final Set<String> seen = <String>{};
-      for (final String symbol in w.symbols) {
-        if (!seen.add(symbol)) continue;
-        if (StockUniverse.all.any((Stock s) => s.symbol == symbol)) cleaned.add(symbol);
-      }
-      return w.copyWith(symbols: cleaned);
-    }).toList(growable: false);
+    final List<dynamic> raw =
+        (_box.get(_watchlistsKey) as List<dynamic>?) ?? const <dynamic>[];
+    return raw
+        .map((dynamic entry) {
+          final Watchlist w = Watchlist.fromMap(entry as Map<dynamic, dynamic>);
+          final List<String> cleaned = <String>[];
+          final Set<String> seen = <String>{};
+          for (final String symbol in w.symbols) {
+            if (!seen.add(symbol)) continue;
+            if (StockUniverse.all.any((Stock s) => s.symbol == symbol)) {
+              cleaned.add(symbol);
+            }
+          }
+          return w.copyWith(symbols: cleaned);
+        })
+        .toList(growable: false);
   }
 
   Watchlist? getById(String id) {
@@ -62,7 +77,10 @@ class WatchlistRepository {
 
   Future<Result<bool>> _persistAll(List<Watchlist> watchlists) async {
     try {
-      await _box.put(_watchlistsKey, watchlists.map((Watchlist w) => w.toMap()).toList(growable: false));
+      await _box.put(
+        _watchlistsKey,
+        watchlists.map((Watchlist w) => w.toMap()).toList(growable: false),
+      );
       return const Ok<bool>(true);
     } catch (e) {
       return Err<bool>(StorageFailure(e.toString()));
@@ -74,14 +92,19 @@ class WatchlistRepository {
   Future<Result<Watchlist>> create(String name) async {
     final String trimmed = name.trim();
     if (trimmed.isEmpty) {
-      return const Err<Watchlist>(StorageFailure('Watchlist name cannot be empty.'));
+      return const Err<Watchlist>(
+        StorageFailure('Watchlist name cannot be empty.'),
+      );
     }
     final Watchlist created = Watchlist(
       id: DateTime.now().microsecondsSinceEpoch.toString(),
       name: trimmed,
       symbols: const <String>[],
     );
-    final Result<bool> result = await _persistAll(<Watchlist>[...getAll(), created]);
+    final Result<bool> result = await _persistAll(<Watchlist>[
+      ...getAll(),
+      created,
+    ]);
     return result.fold<Result<Watchlist>>(
       (Failure f) => Err<Watchlist>(f),
       (bool _) => Ok<Watchlist>(created),
@@ -94,13 +117,17 @@ class WatchlistRepository {
       return const Err<bool>(StorageFailure('Watchlist name cannot be empty.'));
     }
     final List<Watchlist> updated = getAll()
-        .map((Watchlist w) => w.id == watchlistId ? w.copyWith(name: trimmed) : w)
+        .map(
+          (Watchlist w) => w.id == watchlistId ? w.copyWith(name: trimmed) : w,
+        )
         .toList(growable: false);
     return _persistAll(updated);
   }
 
   Future<Result<bool>> delete(String watchlistId) async {
-    final List<Watchlist> updated = getAll().where((Watchlist w) => w.id != watchlistId).toList(growable: false);
+    final List<Watchlist> updated = getAll()
+        .where((Watchlist w) => w.id != watchlistId)
+        .toList(growable: false);
     return _persistAll(updated);
   }
 
@@ -108,19 +135,29 @@ class WatchlistRepository {
 
   Future<Result<bool>> addStock(String watchlistId, Stock stock) async {
     final List<Watchlist> all = getAll();
-    final List<Watchlist> updated = all.map((Watchlist w) {
-      if (w.id != watchlistId) return w;
-      if (w.symbols.contains(stock.symbol)) return w; // already present in THIS watchlist, no-op
-      return w.copyWith(symbols: <String>[...w.symbols, stock.symbol]);
-    }).toList(growable: false);
+    final List<Watchlist> updated = all
+        .map((Watchlist w) {
+          if (w.id != watchlistId) return w;
+          if (w.symbols.contains(stock.symbol)) {
+            return w; // already present in THIS watchlist, no-op
+          }
+          return w.copyWith(symbols: <String>[...w.symbols, stock.symbol]);
+        })
+        .toList(growable: false);
     return _persistAll(updated);
   }
 
   Future<Result<bool>> removeStock(String watchlistId, Stock stock) async {
-    final List<Watchlist> updated = getAll().map((Watchlist w) {
-      if (w.id != watchlistId) return w;
-      return w.copyWith(symbols: w.symbols.where((String s) => s != stock.symbol).toList(growable: false));
-    }).toList(growable: false);
+    final List<Watchlist> updated = getAll()
+        .map((Watchlist w) {
+          if (w.id != watchlistId) return w;
+          return w.copyWith(
+            symbols: w.symbols
+                .where((String s) => s != stock.symbol)
+                .toList(growable: false),
+          );
+        })
+        .toList(growable: false);
     return _persistAll(updated);
   }
 
@@ -128,17 +165,23 @@ class WatchlistRepository {
   /// matching the semantics Flutter's `ReorderableListView.onReorder`
   /// callback expects (`newIndex` is the index *after* removal from
   /// `oldIndex`).
-  Future<Result<bool>> reorderStock(String watchlistId, int oldIndex, int newIndex) async {
+  Future<Result<bool>> reorderStock(
+    String watchlistId,
+    int oldIndex,
+    int newIndex,
+  ) async {
     final List<Watchlist> all = getAll();
-    final List<Watchlist> updated = all.map((Watchlist w) {
-      if (w.id != watchlistId) return w;
-      if (oldIndex < 0 || oldIndex >= w.symbols.length) return w;
-      final List<String> symbols = List<String>.of(w.symbols);
-      final String moved = symbols.removeAt(oldIndex);
-      final int clampedNewIndex = newIndex.clamp(0, symbols.length).toInt();
-      symbols.insert(clampedNewIndex, moved);
-      return w.copyWith(symbols: symbols);
-    }).toList(growable: false);
+    final List<Watchlist> updated = all
+        .map((Watchlist w) {
+          if (w.id != watchlistId) return w;
+          if (oldIndex < 0 || oldIndex >= w.symbols.length) return w;
+          final List<String> symbols = List<String>.of(w.symbols);
+          final String moved = symbols.removeAt(oldIndex);
+          final int clampedNewIndex = newIndex.clamp(0, symbols.length).toInt();
+          symbols.insert(clampedNewIndex, moved);
+          return w.copyWith(symbols: symbols);
+        })
+        .toList(growable: false);
     return _persistAll(updated);
   }
 }

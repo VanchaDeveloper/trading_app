@@ -16,7 +16,8 @@ class WatchlistsListPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider<WatchlistsCubit>(
-      create: (_) => WatchlistsCubit(ServiceLocator.instance.watchlistRepository),
+      create: (_) =>
+          WatchlistsCubit(ServiceLocator.instance.watchlistRepository),
       child: const _WatchlistsListView(),
     );
   }
@@ -27,7 +28,11 @@ class _WatchlistsListView extends StatelessWidget {
 
   Future<void> _promptCreate(BuildContext context) async {
     final WatchlistsCubit cubit = context.read<WatchlistsCubit>();
-    final String? name = await _promptForName(context, title: 'New Watchlist', initialValue: '');
+    final String? name = await _promptForName(
+      context,
+      title: 'New Watchlist',
+      initialValue: '',
+    );
     if (name != null && name.trim().isNotEmpty) {
       await cubit.createWatchlist(name.trim());
     }
@@ -35,8 +40,14 @@ class _WatchlistsListView extends StatelessWidget {
 
   Future<void> _promptRename(BuildContext context, Watchlist watchlist) async {
     final WatchlistsCubit cubit = context.read<WatchlistsCubit>();
-    final String? name = await _promptForName(context, title: 'Rename Watchlist', initialValue: watchlist.name);
-    if (name != null && name.trim().isNotEmpty && name.trim() != watchlist.name) {
+    final String? name = await _promptForName(
+      context,
+      title: 'Rename Watchlist',
+      initialValue: watchlist.name,
+    );
+    if (name != null &&
+        name.trim().isNotEmpty &&
+        name.trim() != watchlist.name) {
       await cubit.renameWatchlist(watchlist.id, name.trim());
     }
   }
@@ -47,12 +58,20 @@ class _WatchlistsListView extends StatelessWidget {
       context: context,
       builder: (BuildContext dialogContext) => AlertDialog(
         title: const Text('Delete watchlist?'),
-        content: Text('"${watchlist.name}" and its stock list will be permanently removed.'),
+        content: Text(
+          '"${watchlist.name}" and its stock list will be permanently removed.',
+        ),
         actions: <Widget>[
-          TextButton(onPressed: () => Navigator.of(dialogContext).pop(false), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Cancel'),
+          ),
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: const Text('Delete', style: TextStyle(color: MarketColors.loss)),
+            child: const Text(
+              'Delete',
+              style: TextStyle(color: MarketColors.loss),
+            ),
           ),
         ],
       ),
@@ -62,8 +81,14 @@ class _WatchlistsListView extends StatelessWidget {
     }
   }
 
-  Future<String?> _promptForName(BuildContext context, {required String title, required String initialValue}) {
-    final TextEditingController controller = TextEditingController(text: initialValue);
+  Future<String?> _promptForName(
+    BuildContext context, {
+    required String title,
+    required String initialValue,
+  }) {
+    final TextEditingController controller = TextEditingController(
+      text: initialValue,
+    );
     return showDialog<String>(
       context: context,
       builder: (BuildContext dialogContext) => AlertDialog(
@@ -75,8 +100,14 @@ class _WatchlistsListView extends StatelessWidget {
           onSubmitted: (String value) => Navigator.of(dialogContext).pop(value),
         ),
         actions: <Widget>[
-          TextButton(onPressed: () => Navigator.of(dialogContext).pop(), child: const Text('Cancel')),
-          TextButton(onPressed: () => Navigator.of(dialogContext).pop(controller.text), child: const Text('Save')),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(controller.text),
+            child: const Text('Save'),
+          ),
         ],
       ),
     );
@@ -88,7 +119,11 @@ class _WatchlistsListView extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Watchlists'),
         actions: <Widget>[
-          IconButton(icon: const Icon(Icons.add), tooltip: 'New watchlist', onPressed: () => _promptCreate(context)),
+          IconButton(
+            icon: const Icon(Icons.add),
+            tooltip: 'New watchlist',
+            onPressed: () => _promptCreate(context),
+          ),
         ],
       ),
       body: BlocBuilder<WatchlistsCubit, WatchlistsState>(
@@ -114,21 +149,33 @@ class _WatchlistsListView extends StatelessWidget {
 
           return ListView.separated(
             itemCount: state.watchlists.length,
-            separatorBuilder: (_, __) => const Divider(height: 1),
+            separatorBuilder: (_, _) => const Divider(height: 1),
             itemBuilder: (BuildContext context, int index) {
               final Watchlist watchlist = state.watchlists[index];
               return ListTile(
-                title: Text(watchlist.name, style: const TextStyle(fontWeight: FontWeight.w600)),
-                subtitle: Text('${watchlist.symbols.length} stock${watchlist.symbols.length == 1 ? '' : 's'}'),
+                title: Text(
+                  watchlist.name,
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
+                subtitle: Text(
+                  '${watchlist.symbols.length} stock${watchlist.symbols.length == 1 ? '' : 's'}',
+                ),
                 trailing: PopupMenuButton<String>(
                   onSelected: (String action) {
                     if (action == 'rename') _promptRename(context, watchlist);
                     if (action == 'delete') _confirmDelete(context, watchlist);
                   },
-                  itemBuilder: (BuildContext context) => const <PopupMenuEntry<String>>[
-                    PopupMenuItem<String>(value: 'rename', child: Text('Rename')),
-                    PopupMenuItem<String>(value: 'delete', child: Text('Delete')),
-                  ],
+                  itemBuilder: (BuildContext context) =>
+                      const <PopupMenuEntry<String>>[
+                        PopupMenuItem<String>(
+                          value: 'rename',
+                          child: Text('Rename'),
+                        ),
+                        PopupMenuItem<String>(
+                          value: 'delete',
+                          child: Text('Delete'),
+                        ),
+                      ],
                 ),
                 onTap: () => Navigator.of(context).push(
                   MaterialPageRoute<void>(

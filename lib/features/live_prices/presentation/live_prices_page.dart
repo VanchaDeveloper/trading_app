@@ -33,8 +33,14 @@ class _LivePricesPageState extends State<LivePricesPage> {
   static const List<_TickRatePreset> _presets = <_TickRatePreset>[
     _TickRatePreset('Normal (1 tick/2s per stock)', Duration(seconds: 2)),
     _TickRatePreset('Fast (2 ticks/s per stock)', Duration(milliseconds: 500)),
-    _TickRatePreset('Stress (5 ticks/s per stock \u2248 50/s overall)', Duration(milliseconds: 200)),
-    _TickRatePreset('Extreme (10 ticks/s per stock \u2248 100/s overall)', Duration(milliseconds: 100)),
+    _TickRatePreset(
+      'Stress (5 ticks/s per stock \u2248 50/s overall)',
+      Duration(milliseconds: 200),
+    ),
+    _TickRatePreset(
+      'Extreme (10 ticks/s per stock \u2248 100/s overall)',
+      Duration(milliseconds: 100),
+    ),
   ];
 
   @override
@@ -53,7 +59,12 @@ class _LivePricesPageState extends State<LivePricesPage> {
               setState(() {}); // refresh the tooltip/subtitle for the new rate
             },
             itemBuilder: (BuildContext context) => _presets
-                .map((_TickRatePreset p) => PopupMenuItem<Duration>(value: p.interval, child: Text(p.label)))
+                .map(
+                  (_TickRatePreset p) => PopupMenuItem<Duration>(
+                    value: p.interval,
+                    child: Text(p.label),
+                  ),
+                )
                 .toList(growable: false),
           ),
         ],
@@ -73,7 +84,7 @@ class _LivePricesPageState extends State<LivePricesPage> {
       ),
       body: ListView.separated(
         itemCount: StockUniverse.all.length,
-        separatorBuilder: (_, __) => const Divider(height: 1),
+        separatorBuilder: (_, _) => const Divider(height: 1),
         itemBuilder: (BuildContext context, int index) {
           final stock = StockUniverse.all[index];
           return StockRow(

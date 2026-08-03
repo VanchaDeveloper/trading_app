@@ -2,15 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../core/stock.dart';
-import '../../../core/theme.dart';
 import '../../../di/service_locator.dart';
 import '../../trading/presentation/buy_sell_ticket_page.dart';
+import '../domain/holdings_sort.dart';
 import 'holding_row.dart';
 import 'holdings_cubit.dart';
+import 'holdings_summary_card.dart';
 
 /// Feature 4: Holdings. Wraps the page in its own `BlocProvider` so the
-/// cubit's lifecycle (and its throttled price-refresh timer) is tied to
-/// this page being on the widget tree, not to the app's lifetime.
+/// cubit's lifecycle (and its throttled reorder timer) is tied to this page
+/// being on the widget tree, not to the app's lifetime.
 class HoldingsPage extends StatelessWidget {
   const HoldingsPage({super.key});
 
@@ -32,8 +33,48 @@ class _HoldingsView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final market = ServiceLocator.instance.marketDataService;
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Holdings')),
+      appBar: AppBar(
+        title: const Text('Holdings'),
+        actions: <Widget>[
+          BlocBuilder<HoldingsCubit, HoldingsState>(
+            buildWhen: (HoldingsState previous, HoldingsState current) =>
+                previous.sortMode != current.sortMode,
+            builder: (BuildContext context, HoldingsState state) {
+              return PopupMenuButton<HoldingsSortMode>(
+                icon: const Icon(Icons.sort),
+                tooltip: 'Sort: ${state.sortMode.label}',
+                onSelected: (HoldingsSortMode mode) =>
+                    context.read<HoldingsCubit>().setSortMode(mode),
+                itemBuilder: (BuildContext context) => HoldingsSortMode.values
+                    .map(
+                      (HoldingsSortMode mode) =>
+                          PopupMenuItem<HoldingsSortMode>(
+                            value: mode,
+                            child: Row(
+                              children: <Widget>[
+                                if (mode == state.sortMode)
+                                  const Icon(Icons.check, size: 18)
+                                else
+                                  const SizedBox(width: 18),
+                                const SizedBox(width: 8),
+                                Text(mode.label),
+                              ],
+                            ),
+                          ),
+                    )
+                    .toList(growable: false),
+              );
+            },
+          ),
+        ],
+      ),
+      // Only rebuilds when the STRUCTURAL holdings list changes (a trade
+      // executes) or the throttled reorder/sort-mode fires — never on a
+      // raw price tick, since each row's own price display is handled by
+      // its own independent subscription below.
       body: BlocBuilder<HoldingsCubit, HoldingsState>(
         builder: (BuildContext context, HoldingsState state) {
           if (state.holdings.isEmpty) {
@@ -42,44 +83,31 @@ class _HoldingsView extends StatelessWidget {
             );
           }
 
-          final Color pnlColor = MarketColors.forChange(state.totalPnl.paise.sign);
-          final String sign = state.totalPnl.paise.sign > 0 ? '+' : '';
-
           return Column(
             children: <Widget>[
               Padding(
                 padding: const EdgeInsets.all(16),
-                child: Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
-                        Text('Portfolio Value', style: Theme.of(context).textTheme.bodySmall),
-                        const SizedBox(height: 4),
-                        Text(state.totalCurrentValue.format(), style: AppTheme.tabularFiguresLarge),
-                        const SizedBox(height: 4),
-                        Text(
-                          '$sign${state.totalPnl.format()}',
-                          style: AppTheme.tabularFigures.copyWith(color: pnlColor),
-                        ),
-                      ],
-                    ),
-                  ),
+                child: HoldingsSummaryCard(
+                  holdings: state.holdings,
+                  market: market,
                 ),
               ),
               const Divider(height: 1),
               Expanded(
                 child: ListView.separated(
                   itemCount: state.holdings.length,
-                  separatorBuilder: (_, __) => const Divider(height: 1),
+                  separatorBuilder: (_, _) => const Divider(height: 1),
                   itemBuilder: (BuildContext context, int index) {
                     final holding = state.holdings[index];
                     return HoldingRow(
+                      key: ValueKey<String>(holding.symbol),
                       holding: holding,
+                      tickerListenable: market.tickerFor(holding.symbol),
                       onTap: () => Navigator.of(context).push(
                         MaterialPageRoute<void>(
-                          builder: (_) => BuySellTicketPage(stock: StockUniverse.bySymbol(holding.symbol)),
+                          builder: (_) => BuySellTicketPage(
+                            stock: StockUniverse.bySymbol(holding.symbol),
+                          ),
                         ),
                       ),
                     );
