@@ -64,15 +64,6 @@ flutter run
 flutter test
 ```
 
-## Notes for Submission
-
-Before submission, run the app locally and verify the following:
-
-- the tick engine is configurable and visually demonstrable,
-- row flash animation is transient per tick,
-- the holdings computation matches the expected truncation behavior,
-- README and code are aligned with the final demo video.
-
 ## License
 
 This project is for educational/demo purposes unless otherwise stated.
